@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Systemvarning</title>
+<title>Security Scan</title>
 <style>
 body {
   margin: 0;
@@ -12,10 +12,25 @@ body {
   overflow: hidden;
 }
 
+#startScreen {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 24px;
+  text-align: center;
+}
+
 #terminal {
   padding: 20px;
   font-size: 20px;
   white-space: pre-line;
+  display: none;
 }
 
 #bigWarning {
@@ -49,24 +64,41 @@ body {
 </head>
 <body>
 
+<div id="startScreen">
+  <p>Click to start security scan</p>
+  <button onclick="startPrank()">Start</button>
+</div>
+
 <div id="terminal"></div>
 <div id="bigWarning">⚠ VIRUS DETECTED ⚠</div>
 <button id="closeBtn" onclick="endPrank()">X</button>
 
 <script>
+function startPrank() {
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("terminal").style.display = "block";
+
+  // Try fullscreen (user-initiated, so allowed)
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
+  }
+
+  typeLine();
+  setTimeout(showWarning, 8000);
+  setTimeout(endReveal, 20000);
+}
+
 let lines = [
-  "Startar säkerhetskontroll...",
-  "Ansluter till systemkärna...",
-  "Söker efter hot...",
-  "Hot identifierat!",
-  "Försöker isolera virus...",
-  "Misslyckades...",
-  "Initierar nödrutin...",
-  "Laddar upp filer...",
-  "Skickar data...",
-  "Krypterar enhet...",
-  "Åtkomst beviljad till extern server...",
-  "System komprometterat..."
+  "Initializing system scan...",
+  "Accessing core files...",
+  "Scanning for threats...",
+  "Threat detected!",
+  "Attempting removal...",
+  "Removal failed...",
+  "Uploading data...",
+  "Encrypting device...",
+  "Granting remote access...",
+  "System compromised..."
 ];
 
 let i = 0;
@@ -83,21 +115,17 @@ function showWarning() {
   document.getElementById("bigWarning").style.display = "block";
 }
 
-function endPrank() {
-  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>😂 Lugn! Det var bara ett skämt</h1>";
+function endReveal() {
+  document.getElementById("terminal").innerHTML += "\n\n😂 JUST KIDDING!";
+  document.getElementById("closeBtn").style.display = "block";
 }
 
-typeLine();
-
-// Visa stor varning efter några sekunder
-setTimeout(showWarning, 8000);
-
-// Avslöja prank efter ~20 sek
-setTimeout(function() {
-  document.getElementById("terminal").innerHTML += "\n\n😂 SKOJAR BARA!";
-  document.getElementById("closeBtn").style.display = "block";
-}, 20000);
-
+function endPrank() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  }
+  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>You're safe 😄</h1>";
+}
 </script>
 
 </body>

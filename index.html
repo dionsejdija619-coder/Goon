@@ -5,15 +5,34 @@
 <title>Systemvarning</title>
 <style>
 body {
-  background-color: black;
-  color: lime;
+  margin: 0;
+  background: black;
+  color: #00ff00;
   font-family: monospace;
   overflow: hidden;
 }
-#content {
+
+#terminal {
   padding: 20px;
-  font-size: 18px;
+  font-size: 20px;
+  white-space: pre-line;
 }
+
+#bigWarning {
+  position: fixed;
+  top: 30%;
+  width: 100%;
+  text-align: center;
+  font-size: 60px;
+  color: red;
+  display: none;
+  animation: blink 0.5s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
 #closeBtn {
   position: fixed;
   top: 10px;
@@ -21,7 +40,8 @@ body {
   background: red;
   color: white;
   border: none;
-  padding: 10px;
+  padding: 12px;
+  font-size: 16px;
   cursor: pointer;
   display: none;
 }
@@ -29,36 +49,55 @@ body {
 </head>
 <body>
 
+<div id="terminal"></div>
+<div id="bigWarning">⚠ VIRUS DETECTED ⚠</div>
 <button id="closeBtn" onclick="endPrank()">X</button>
 
-<div id="content"></div>
-
 <script>
-let text = [
-  "Initierar systemskanning...",
-  "Åtkomst till filer...",
-  "Laddar upp data...",
-  "Krypterar system...",
-  "Skickar till server..."
+let lines = [
+  "Startar säkerhetskontroll...",
+  "Ansluter till systemkärna...",
+  "Söker efter hot...",
+  "Hot identifierat!",
+  "Försöker isolera virus...",
+  "Misslyckades...",
+  "Initierar nödrutin...",
+  "Laddar upp filer...",
+  "Skickar data...",
+  "Krypterar enhet...",
+  "Åtkomst beviljad till extern server...",
+  "System komprometterat..."
 ];
 
 let i = 0;
+
 function typeLine() {
-  if (i < text.length) {
-    document.getElementById("content").innerHTML += text[i] + "<br>";
+  if (i < lines.length) {
+    document.getElementById("terminal").innerHTML += lines[i] + "\n";
     i++;
-    setTimeout(typeLine, 1000);
-  } else {
-    document.getElementById("content").innerHTML += "<br>SKOJAR BARA 😄";
-    document.getElementById("closeBtn").style.display = "block";
+    setTimeout(typeLine, 1200);
   }
 }
 
+function showWarning() {
+  document.getElementById("bigWarning").style.display = "block";
+}
+
 function endPrank() {
-  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>Du överlevde 😄</h1>";
+  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>😂 Lugn! Det var bara ett skämt</h1>";
 }
 
 typeLine();
+
+// Visa stor varning efter några sekunder
+setTimeout(showWarning, 8000);
+
+// Avslöja prank efter ~20 sek
+setTimeout(function() {
+  document.getElementById("terminal").innerHTML += "\n\n😂 SKOJAR BARA!";
+  document.getElementById("closeBtn").style.display = "block";
+}, 20000);
+
 </script>
 
 </body>

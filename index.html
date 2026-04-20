@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Security Scan</title>
+<title>System Scan</title>
 <style>
 body {
   margin: 0;
@@ -22,30 +22,22 @@ body {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  font-size: 24px;
-  text-align: center;
 }
 
 #terminal {
   padding: 20px;
-  font-size: 20px;
+  font-size: 18px;
   white-space: pre-line;
   display: none;
 }
 
-#bigWarning {
+#progress {
   position: fixed;
-  top: 30%;
-  width: 100%;
-  text-align: center;
-  font-size: 60px;
-  color: red;
-  display: none;
-  animation: blink 0.5s infinite;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: lime;
+  width: 0%;
 }
 
 #closeBtn {
@@ -55,76 +47,81 @@ body {
   background: red;
   color: white;
   border: none;
-  padding: 12px;
-  font-size: 16px;
-  cursor: pointer;
+  padding: 10px;
   display: none;
+  cursor: pointer;
 }
 </style>
 </head>
 <body>
 
 <div id="startScreen">
-  <p>Click to start security scan</p>
-  <button onclick="startPrank()">Start</button>
+  <h2>System Security Check</h2>
+  <button onclick="start()">Start Scan</button>
 </div>
 
 <div id="terminal"></div>
-<div id="bigWarning">⚠ VIRUS DETECTED ⚠</div>
+<div id="progress"></div>
 <button id="closeBtn" onclick="endPrank()">X</button>
 
 <script>
-function startPrank() {
-  document.getElementById("startScreen").style.display = "none";
-  document.getElementById("terminal").style.display = "block";
-
-  // Try fullscreen (user-initiated, so allowed)
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
-  }
-
-  typeLine();
-  setTimeout(showWarning, 8000);
-  setTimeout(endReveal, 20000);
-}
-
 let lines = [
-  "Initializing system scan...",
-  "Accessing core files...",
-  "Scanning for threats...",
-  "Threat detected!",
-  "Attempting removal...",
-  "Removal failed...",
-  "Uploading data...",
-  "Encrypting device...",
-  "Granting remote access...",
-  "System compromised..."
+  "[INFO] Initializing security modules...",
+  "[OK] Kernel access granted",
+  "[SCAN] Checking system files...",
+  "[SCAN] Checking browser data...",
+  "[WARNING] Suspicious activity detected",
+  "[ACTION] Attempting isolation...",
+  "[FAILED] Isolation failed",
+  "[DOWNLOAD] Downloading security patch...",
+  "[DOWNLOAD] 12%...",
+  "[DOWNLOAD] 47%...",
+  "[DOWNLOAD] 83%...",
+  "[ERROR] Patch corrupted",
+  "[UPLOAD] Sending diagnostics...",
+  "[BREACH] External access detected",
+  "[CRITICAL] System integrity compromised"
 ];
 
 let i = 0;
+
+function start() {
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("terminal").style.display = "block";
+
+  typeLine();
+  progressBar();
+  setTimeout(reveal, 20000);
+}
 
 function typeLine() {
   if (i < lines.length) {
     document.getElementById("terminal").innerHTML += lines[i] + "\n";
     i++;
-    setTimeout(typeLine, 1200);
+    setTimeout(typeLine, 1000);
   }
 }
 
-function showWarning() {
-  document.getElementById("bigWarning").style.display = "block";
+function progressBar() {
+  let width = 0;
+  let bar = document.getElementById("progress");
+  let interval = setInterval(() => {
+    if (width >= 100) {
+      clearInterval(interval);
+    } else {
+      width++;
+      bar.style.width = width + "%";
+    }
+  }, 200);
 }
 
-function endReveal() {
-  document.getElementById("terminal").innerHTML += "\n\n😂 JUST KIDDING!";
+function reveal() {
+  document.getElementById("terminal").innerHTML += "\n\n😂 JUST KIDDING - NOTHING HAPPENED";
   document.getElementById("closeBtn").style.display = "block";
 }
 
 function endPrank() {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  }
-  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>You're safe 😄</h1>";
+  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>All safe 😄</h1>";
 }
 </script>
 

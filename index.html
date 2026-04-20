@@ -1,88 +1,213 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Meme Quiz</title>
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #111;
-  color: white;
-  text-align: center;
-}
-
-button {
-  padding: 10px 20px;
-  margin: 10px;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-#box {
-  margin-top: 15%;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gooner Quiz 🧠💦</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a0033, #330066);
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 3rem;
+      margin: 20px 0;
+      text-shadow: 0 0 20px #ff00ff;
+    }
+    .quiz-container {
+      max-width: 700px;
+      margin: 30px auto;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+    }
+    .question {
+      font-size: 1.4rem;
+      margin: 30px 0 20px;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    button {
+      background: #ff00ff;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #ff66ff;
+      transform: scale(1.03);
+    }
+    .result {
+      font-size: 2rem;
+      margin: 40px 0;
+      display: none;
+    }
+    .progress {
+      height: 8px;
+      background: #ff00ff;
+      width: 0%;
+      transition: width 0.4s;
+      margin: 20px 0;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
+  <h1>🚀 THE GOONER QUIZ 🚀</h1>
+  <p>How much of a gooner are you really?</p>
 
-<div id="box">
-  <h2 id="question">Do you want to start the quiz?</h2>
-  <div id="buttons"></div>
-</div>
+  <div class="quiz-container">
+    <div id="progress" class="progress"></div>
+    
+    <div id="question-container">
+      <div class="question" id="question"></div>
+      <div class="options" id="options"></div>
+    </div>
 
-<script>
-let step = 0;
+    <div id="result" class="result"></div>
 
-function loadQuestion() {
-  let q = document.getElementById("question");
-  let b = document.getElementById("buttons");
-  b.innerHTML = "";
+    <button id="next-btn" style="display:none; margin-top:20px;">Next Question →</button>
+  </div>
 
-  if (step === 0) {
-    q.innerText = "Do you want to start the meme quiz?";
-    addBtn("Yes", next);
-    addBtn("No", next);
-  }
+  <script>
+    const questions = [
+      {
+        q: "How long is your average session?",
+        a: ["Under 15 minutes", "30-60 minutes", "1-3 hours", "3+ hours (I lose track of time)"],
+        scores: [1, 3, 6, 10]
+      },
+      {
+        q: "What’s your record without finishing?",
+        a: ["I always finish quick", "30 minutes", "2 hours", "I don’t even remember the last time I finished"],
+        scores: [1, 4, 7, 10]
+      },
+      {
+        q: "Do you edge on purpose?",
+        a: ["What’s edging?", "Sometimes", "Every single time", "Edging is my personality"],
+        scores: [1, 4, 7, 10]
+      },
+      {
+        q: "How many tabs do you usually have open?",
+        a: ["1-2", "5-10", "10-20", "30+ tabs + playlists"],
+        scores: [2, 5, 8, 10]
+      },
+      {
+        q: "Do you goon to things that aren’t even that hot anymore?",
+        a: ["No, I have standards", "Occasionally", "Yes but I feel bad", "Everything is goon fuel now"],
+        scores: [1, 4, 7, 10]
+      },
+      {
+        q: "What’s your go-to goon face?",
+        a: ["Normal face", "Slightly concentrated", "Eyes rolled back", "Full ahegao / brain-melt mode"],
+        scores: [2, 5, 8, 10]
+      },
+      {
+        q: "Have you ever skipped important things to goon?",
+        a: ["Never", "Once or twice", "Pretty often", "My whole life is scheduled around gooning"],
+        scores: [1, 4, 7, 10]
+      },
+      {
+        q: "Do you have a dedicated gooning playlist/folder?",
+        a: ["No", "Just a few videos", "Yes, well organized", "Multiple folders with categories and timers"],
+        scores: [1, 4, 7, 10]
+      },
+      {
+        q: "What do you say out loud while gooning?",
+        a: ["Nothing", "Light moaning", "Full dirty talk to myself", "I speak in tongues and call myself a gooner"],
+        scores: [2, 5, 8, 10]
+      },
+      {
+        q: "Final test: Would you rather...?",
+        a: ["Have sex", "Eat your favorite meal", "Sleep 12 hours", "Goon for 6 hours straight"],
+        scores: [1, 3, 5, 10]
+      }
+    ];
 
-  else if (step === 1) {
-    q.innerText = "Do you like funny quizzes?";
-    addBtn("Yes", next);
-    addBtn("No", next);
-  }
+    let currentQuestion = 0;
+    let totalScore = 0;
 
-  else if (step === 2) {
-    q.innerText = "How often do you use the internet?";
-    addBtn("All the time", next);
-    addBtn("Sometimes", next);
-    addBtn("Rarely", next);
-  }
+    const qElement = document.getElementById('question');
+    const optionsElement = document.getElementById('options');
+    const resultElement = document.getElementById('result');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress');
 
-  else if (step === 3) {
-    q.innerText = "Do you enjoy memes?";
-    addBtn("Yes", next);
-    addBtn("No", next);
-  }
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      qElement.textContent = `${currentQuestion + 1}. ${q.q}`;
+      optionsElement.innerHTML = '';
 
-  else {
-    q.innerText = "🎉 Congratulations! You are officially in the Meme Club 😂";
-  }
-}
+      q.a.forEach((answer, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = answer;
+        btn.onclick = () => {
+          totalScore += q.scores[index];
+          nextQuestion();
+        };
+        optionsElement.appendChild(btn);
+      });
 
-function addBtn(text, func) {
-  let btn = document.createElement("button");
-  btn.innerText = text;
-  btn.onclick = func;
-  document.getElementById("buttons").appendChild(btn);
-}
+      progressBar.style.width = `${((currentQuestion) / questions.length) * 100}%`;
+      nextBtn.style.display = 'none';
+    }
 
-function next() {
-  step++;
-  loadQuestion();
-}
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
 
-loadQuestion();
-</script>
+    function showResult() {
+      document.getElementById('question-container').style.display = 'none';
+      nextBtn.style.display = 'none';
+      resultElement.style.display = 'block';
 
+      let title = '';
+      let message = '';
+
+      if (totalScore <= 25) {
+        title = "🧍 Casual Browser";
+        message = "You still have a life. Touch some grass king 👑";
+      } else if (totalScore <= 50) {
+        title = "🥉 Amateur Gooner";
+        message = "Solid start. You’re getting there but still have self-control.";
+      } else if (totalScore <= 75) {
+        title = "🥈 Certified Gooner";
+        message = "Respectable. Your brain is nicely rewired.";
+      } else {
+        title = "👑 ULTIMATE GOONER GOD";
+        message = "You have ascended. Porn is now your religion. There is no escape. 💦";
+      }
+
+      resultElement.innerHTML = `
+        <h2>Your Gooner Level:</h2>
+        <h1>${title}</h1>
+        <p>${message}</p>
+        <p style="font-size:1.5rem; margin:30px 0;">Final Score: <strong>${totalScore}/100</strong></p>
+        <button onclick="location.reload()" style="background:#00ffcc; color:black; padding:15px 30px; font-size:1.2rem;">
+          Take Quiz Again
+        </button>
+      `;
+    }
+
+    // Start the quiz
+    loadQuestion();
+  </script>
 </body>
 </html>

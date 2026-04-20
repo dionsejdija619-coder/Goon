@@ -2,127 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>System Scan</title>
+<title>System Alert</title>
 <style>
 body {
   margin: 0;
   background: black;
-  color: #00ff00;
-  font-family: monospace;
   overflow: hidden;
+  font-family: monospace;
 }
 
-#startScreen {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: black;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-#terminal {
-  padding: 20px;
-  font-size: 18px;
-  white-space: pre-line;
-  display: none;
-}
-
-#progress {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  height: 5px;
-  background: lime;
-  width: 0%;
-}
-
-#closeBtn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  background: red;
-  color: white;
-  border: none;
+.popup {
+  position: absolute;
+  width: 200px;
   padding: 10px;
-  display: none;
-  cursor: pointer;
+  background: #111;
+  color: lime;
+  border: 1px solid lime;
+  font-size: 14px;
 }
 </style>
 </head>
 <body>
 
-<div id="startScreen">
-  <h2>System Security Check</h2>
-  <button onclick="start()">Start Scan</button>
-</div>
-
-<div id="terminal"></div>
-<div id="progress"></div>
-<button id="closeBtn" onclick="endPrank()">X</button>
-
 <script>
-let lines = [
-  "[INFO] Initializing security modules...",
-  "[OK] Kernel access granted",
-  "[SCAN] Checking system files...",
-  "[SCAN] Checking browser data...",
-  "[WARNING] Suspicious activity detected",
-  "[ACTION] Attempting isolation...",
-  "[FAILED] Isolation failed",
-  "[DOWNLOAD] Downloading security patch...",
-  "[DOWNLOAD] 12%...",
-  "[DOWNLOAD] 47%...",
-  "[DOWNLOAD] 83%...",
-  "[ERROR] Patch corrupted",
-  "[UPLOAD] Sending diagnostics...",
-  "[BREACH] External access detected",
-  "[CRITICAL] System integrity compromised"
+let messages = [
+  "Scanning files...",
+  "Warning: suspicious process",
+  "Downloading update...",
+  "Firewall bypassed",
+  "System error detected",
+  "Uploading logs...",
+  "Encrypting cache..."
 ];
 
-let i = 0;
+function createPopup() {
+  let div = document.createElement("div");
+  div.className = "popup";
+  div.innerText = messages[Math.floor(Math.random() * messages.length)];
 
-function start() {
-  document.getElementById("startScreen").style.display = "none";
-  document.getElementById("terminal").style.display = "block";
+  div.style.top = Math.random() * window.innerHeight + "px";
+  div.style.left = Math.random() * window.innerWidth + "px";
 
-  typeLine();
-  progressBar();
-  setTimeout(reveal, 20000);
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 4000);
 }
 
-function typeLine() {
-  if (i < lines.length) {
-    document.getElementById("terminal").innerHTML += lines[i] + "\n";
-    i++;
-    setTimeout(typeLine, 1000);
-  }
-}
+// skapa popups varje sekund
+setInterval(createPopup, 800);
 
-function progressBar() {
-  let width = 0;
-  let bar = document.getElementById("progress");
-  let interval = setInterval(() => {
-    if (width >= 100) {
-      clearInterval(interval);
-    } else {
-      width++;
-      bar.style.width = width + "%";
-    }
-  }, 200);
-}
-
-function reveal() {
-  document.getElementById("terminal").innerHTML += "\n\n😂 JUST KIDDING - NOTHING HAPPENED";
-  document.getElementById("closeBtn").style.display = "block";
-}
-
-function endPrank() {
-  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>All safe 😄</h1>";
-}
+// stoppa efter 20 sek och avslöja skämt
+setTimeout(() => {
+  document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%;'>😂 JUST A SIMULATION</h1>";
+}, 20000);
 </script>
 
 </body>

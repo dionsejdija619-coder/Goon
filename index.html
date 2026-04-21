@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Better Flappy Bird</title>
+    <title>Flappy Bird: Shop Update</title>
     <style>
         body {
             margin: 0;
@@ -14,103 +14,213 @@
             height: 100vh;
             background-color: #222;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 500px;
         }
         canvas {
             border: 4px solid #444;
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            display: block;
         }
-        #instructions {
+        
+        /* UI Overlays */
+        .screen {
             position: absolute;
-            top: 20px;
-            color: #ddd;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 20px;
-            border-radius: 8px;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            color: white;
+            display: none; /* Hidden by default */
         }
-        h2 { margin: 0 0 5px 0; }
-        p { margin: 0; font-size: 14px;}
+        .active {
+            display: flex !important;
+        }
+        
+        h1 { margin: 0 0 20px 0; font-size: 36px; text-shadow: 2px 2px 0 #000; color: #FFD700; }
+        h2 { margin: 0 0 10px 0; }
+        
+        button {
+            background-color: #73BF2E;
+            color: white;
+            border: 3px solid #558A22;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        button:hover { background-color: #85d636; transform: scale(1.05); }
+        button:active { transform: scale(0.95); }
+        .btn-shop { background-color: #4CB1F7; border-color: #2b8ac9; }
+        .btn-shop:hover { background-color: #6bc0fa; }
+
+        /* Shop Grid */
+        #shop-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .shop-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .shop-card.equipped { border-color: #FFD700; background: rgba(255, 215, 0, 0.2); }
+        .color-preview {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            margin: 0 auto 10px auto;
+            border: 2px solid white;
+        }
+        .buy-btn { font-size: 14px; padding: 5px 10px; margin: 5px 0 0 0; }
+        .buy-btn:disabled { background: #555; border-color: #333; cursor: not-allowed; transform: none; }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 15px; right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 2px 2px 0 #000;
+            pointer-events: none;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-    <div id="instructions">
-        <h2>Flappy Bird</h2>
-        <p><strong>SPACEBAR / CLICK</strong> to flap | <strong>Q</strong> to restart</p>
-    </div>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="500"></canvas>
+        
+        <div id="hud">Coins: <span id="coin-count">0</span></div>
 
-    <canvas id="gameCanvas" width="400" height="500"></canvas>
+        <div id="menu-screen" class="screen active">
+            <h1>Flappy Bird</h1>
+            <button onclick="startGame()">Play Game</button>
+            <button class="btn-shop" onclick="showShop()">Skin Shop</button>
+        </div>
+
+        <div id="shop-screen" class="screen">
+            <h2>Shop</h2>
+            <p style="margin-top: 0;">Coins: <span id="shop-coins">0</span></p>
+            <div id="shop-items">
+                </div>
+            <button onclick="showMenu()">Back to Menu</button>
+        </div>
+
+        <div id="game-over-screen" class="screen">
+            <h2 style="font-size: 32px; color: #ff4c4c;">Game Over</h2>
+            <p style="font-size: 24px;">Score: <span id="final-score">0</span></p>
+            <p style="font-size: 18px; color: #FFD700;">Coins Earned: +<span id="earned-coins">0</span></p>
+            <button onclick="resetGame()">Play Again (Q)</button>
+            <button class="btn-shop" onclick="showMenu()">Main Menu</button>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
+        // Game State Variables
+        let gameState = "MENU"; // MENU, PLAYING, GAMEOVER, SHOP
         let frames = 0;
         let score = 0;
-        let gameOver = false;
         let bgOffset = 0;
+        
+        // Difficulty Variables
+        let baseSpeed = 2.5;
+        let gameSpeed = baseSpeed;
+        let pipeSpawnRate = 90;
 
-        // Upgraded Bird Object
+        // Save Data (LocalStorage)
+        let totalCoins = parseInt(localStorage.getItem("flappyCoins")) || 0;
+        let unlockedSkins = JSON.parse(localStorage.getItem("flappySkins")) || ["Classic"];
+        let equippedSkin = localStorage.getItem("flappyEquipped") || "Classic";
+
+        // Skin Database
+        const skins = {
+            "Classic": { color: "#FFD700", cost: 0 },
+            "Ruby":    { color: "#FF3333", cost: 10 },
+            "Sapphire":{ color: "#3399FF", cost: 25 },
+            "Shadow":  { color: "#444444", cost: 50 }
+        };
+
+        // UI Elements
+        const menuScreen = document.getElementById("menu-screen");
+        const shopScreen = document.getElementById("shop-screen");
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const hud = document.getElementById("hud");
+        const coinCount = document.getElementById("coin-count");
+        const shopCoins = document.getElementById("shop-coins");
+
+        // Update UI counters
+        function updateCoinsUI() {
+            coinCount.innerText = totalCoins;
+            shopCoins.innerText = totalCoins;
+            localStorage.setItem("flappyCoins", totalCoins);
+            localStorage.setItem("flappySkins", JSON.stringify(unlockedSkins));
+            localStorage.setItem("flappyEquipped", equippedSkin);
+        }
+        updateCoinsUI();
+
+        // Bird Object
         const bird = {
             x: 80,
             y: 250,
             radius: 14,
-            gravity: 0.6,    // Increased gravity (less floaty)
-            jump: -7.5,      // Stronger, snappier jump
+            gravity: 0.6,
+            jump: -7.5,
             velocity: 0,
-            flapTimer: 0,    // Used to animate the wing
+            flapTimer: 0,
             
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                // Tilt the bird based on velocity (falling = tilt down, jumping = tilt up)
                 let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
                 ctx.rotate(rotation);
 
-                // Draw Body
-                ctx.fillStyle = "#FFD700"; // Yellow
+                // Draw Body using EQUIPPED SKIN color
+                ctx.fillStyle = skins[equippedSkin].color;
                 ctx.strokeStyle = "#000";
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+                ctx.fill(); ctx.stroke();
 
-                // Draw Eye
-                ctx.fillStyle = "white";
-                ctx.beginPath();
-                ctx.arc(6, -5, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "black";
-                ctx.beginPath();
-                ctx.arc(8, -5, 2, 0, Math.PI * 2); // Pupil
-                ctx.fill();
+                // Eye
+                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -5, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(8, -5, 2, 0, Math.PI * 2); ctx.fill();
 
-                // Draw Beak
-                ctx.fillStyle = "#FF8C00"; // Orange
-                ctx.beginPath();
-                ctx.moveTo(10, 2);
-                ctx.lineTo(24, 6);
-                ctx.lineTo(10, 10);
-                ctx.fill();
-                ctx.stroke();
+                // Beak
+                ctx.fillStyle = "#FF8C00"; ctx.beginPath();
+                ctx.moveTo(10, 2); ctx.lineTo(24, 6); ctx.lineTo(10, 10);
+                ctx.fill(); ctx.stroke();
 
-                // Draw Wing (Animates based on flapTimer)
-                ctx.fillStyle = "#FFF";
-                ctx.beginPath();
+                // Wing
+                ctx.fillStyle = "#FFF"; ctx.beginPath();
                 if (this.flapTimer > 0) {
-                    // Wing UP (Flapping)
                     ctx.ellipse(-4, -6, 8, 5, Math.PI / 6, 0, Math.PI * 2);
                     this.flapTimer--;
                 } else {
-                    // Wing DOWN (Gliding/Falling)
                     ctx.ellipse(-4, 4, 8, 5, -Math.PI / 8, 0, Math.PI * 2);
                 }
-                ctx.fill();
-                ctx.stroke();
+                ctx.fill(); ctx.stroke();
 
                 ctx.restore();
             },
@@ -118,12 +228,10 @@
                 this.velocity += this.gravity;
                 this.y += this.velocity;
                 
-                // Hit the floor
                 if (this.y + this.radius >= canvas.height - 40) { 
                     this.y = canvas.height - 40 - this.radius;
-                    gameOver = true;
+                    endGame();
                 }
-                // Hit the ceiling
                 if (this.y - this.radius <= 0) {
                     this.y = this.radius;
                     this.velocity = 0;
@@ -131,86 +239,67 @@
             },
             flap() {
                 this.velocity = this.jump;
-                this.flapTimer = 10; // Keep wing up for 10 frames
+                this.flapTimer = 10;
             }
         };
 
-        // Pipes array and settings
+        // Pipes
         let pipes = [];
         const pipeWidth = 60;
-        const pipeGap = 140; // Gap for the bird to pass through
+        const pipeGap = 140;
 
         function handlePipes() {
-            if (frames % 90 === 0) {
+            if (frames % pipeSpawnRate === 0) {
                 let topHeight = Math.random() * (canvas.height - pipeGap - 120) + 40;
-                pipes.push({
-                    x: canvas.width,
-                    top: topHeight,
-                    bottom: topHeight + pipeGap,
-                    passed: false
-                });
+                pipes.push({ x: canvas.width, top: topHeight, bottom: topHeight + pipeGap, passed: false });
             }
 
             for (let i = 0; i < pipes.length; i++) {
                 let p = pipes[i];
-                p.x -= 2.5; // Game speed
+                p.x -= gameSpeed;
 
-                // Pipe Colors
-                ctx.fillStyle = "#73BF2E";
-                ctx.strokeStyle = "#558A22";
-                ctx.lineWidth = 3;
+                ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
+                
+                // Draw Top
+                ctx.fillRect(p.x, 0, pipeWidth, p.top); ctx.strokeRect(p.x, 0, pipeWidth, p.top);
+                ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
+                
+                // Draw Bottom
+                let bottomHeight = canvas.height - p.bottom - 40;
+                ctx.fillRect(p.x, p.bottom, pipeWidth, bottomHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bottomHeight);
+                ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
 
-                // Draw Top Pipe
-                ctx.fillRect(p.x, 0, pipeWidth, p.top);
-                ctx.strokeRect(p.x, 0, pipeWidth, p.top);
-                // Top Pipe Cap
-                ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
-                ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
+                // Collision
+                let bLeft = bird.x - bird.radius + 2, bRight = bird.x + bird.radius - 2;
+                let bTop = bird.y - bird.radius + 2, bBottom = bird.y + bird.radius - 2;
 
-                // Draw Bottom Pipe
-                let bottomHeight = canvas.height - p.bottom - 40; // -40 for the ground
-                ctx.fillRect(p.x, p.bottom, pipeWidth, bottomHeight);
-                ctx.strokeRect(p.x, p.bottom, pipeWidth, bottomHeight);
-                // Bottom Pipe Cap
-                ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
-                ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
-
-                // Collision Detection (taking bird radius into account)
-                let birdLeft = bird.x - bird.radius + 2;
-                let birdRight = bird.x + bird.radius - 2;
-                let birdTop = bird.y - bird.radius + 2;
-                let birdBottom = bird.y + bird.radius - 2;
-
-                if (
-                    birdRight > p.x && birdLeft < p.x + pipeWidth &&
-                    (birdTop < p.top || birdBottom > p.bottom)
-                ) {
-                    gameOver = true;
+                if (bRight > p.x && bLeft < p.x + pipeWidth && (bTop < p.top || bBottom > p.bottom)) {
+                    endGame();
                 }
 
-                // Increase score
+                // Score & Coin & Difficulty Increase
                 if (p.x + pipeWidth < bird.x && !p.passed) {
                     score++;
+                    totalCoins++;
+                    updateCoinsUI();
                     p.passed = true;
+                    
+                    // INCREASING DIFFICULTY
+                    // Cap max speed at 5.5 so it doesn't become impossible
+                    gameSpeed = Math.min(baseSpeed + (score * 0.1), 5.5);
+                    // Adjust spawn rate so pipes don't get too far apart when moving faster
+                    pipeSpawnRate = Math.max(Math.floor(225 / gameSpeed), 40);
                 }
             }
 
-            // Remove off-screen pipes
-            if (pipes.length > 0 && pipes[0].x < -pipeWidth - 10) {
-                pipes.shift();
-            }
+            if (pipes.length > 0 && pipes[0].x < -pipeWidth - 10) pipes.shift();
         }
 
-        // Draw Background (Sky, City, Ground)
         function drawBackground() {
-            // Sky Gradient
             let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, "#4CB1F7");
-            grad.addColorStop(1, "#A2E0FF");
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, "#4CB1F7"); grad.addColorStop(1, "#A2E0FF");
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Simple parallax cityscape
             ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
             for(let i = 0; i < 5; i++) {
                 let xPos = ((i * 150) - (bgOffset * 0.5)) % (canvas.width + 150);
@@ -219,15 +308,10 @@
                 ctx.fillRect(xPos + 40, canvas.height - 220, 60, 180);
             }
 
-            // Moving Ground
-            bgOffset += 2.5; // Match pipe speed
-            ctx.fillStyle = "#DED895"; // Dirt color
-            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            if (gameState === "PLAYING") bgOffset += gameSpeed;
+            ctx.fillStyle = "#DED895"; ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            ctx.fillStyle = "#73BF2E"; ctx.fillRect(0, canvas.height - 40, canvas.width, 10);
             
-            ctx.fillStyle = "#73BF2E"; // Grass top
-            ctx.fillRect(0, canvas.height - 40, canvas.width, 10);
-            
-            // Ground lines for movement effect
             ctx.fillStyle = "#C6BD66";
             for(let i = 0; i < 20; i++) {
                 let lineX = ((i * 30) - bgOffset) % canvas.width;
@@ -236,26 +320,123 @@
             }
         }
 
+        // --- GAME CONTROL FUNCTIONS ---
+
+        function startGame() {
+            gameState = "PLAYING";
+            menuScreen.classList.remove("active");
+            hud.style.display = "block";
+            resetGameVariables();
+        }
+
         function resetGame() {
+            gameState = "PLAYING";
+            gameOverScreen.classList.remove("active");
+            resetGameVariables();
+        }
+
+        function resetGameVariables() {
             bird.y = 250;
             bird.velocity = 0;
             bird.flapTimer = 0;
             pipes = [];
             score = 0;
             frames = 0;
-            gameOver = false;
-            animate();
+            gameSpeed = baseSpeed;
+            pipeSpawnRate = 90;
         }
 
-        // Main game loop
+        function endGame() {
+            gameState = "GAMEOVER";
+            document.getElementById("final-score").innerText = score;
+            document.getElementById("earned-coins").innerText = score; // Earned 1 coin per score
+            gameOverScreen.classList.add("active");
+            hud.style.display = "none";
+        }
+
+        function showMenu() {
+            gameState = "MENU";
+            shopScreen.classList.remove("active");
+            gameOverScreen.classList.remove("active");
+            menuScreen.classList.add("active");
+            hud.style.display = "none";
+        }
+
+        // --- SHOP FUNCTIONS ---
+
+        function showShop() {
+            gameState = "SHOP";
+            menuScreen.classList.remove("active");
+            shopScreen.classList.add("active");
+            renderShop();
+        }
+
+        function renderShop() {
+            const shopContainer = document.getElementById("shop-items");
+            shopContainer.innerHTML = ""; // Clear current
+            
+            for (let skinName in skins) {
+                let skin = skins[skinName];
+                let isUnlocked = unlockedSkins.includes(skinName);
+                let isEquipped = equippedSkin === skinName;
+
+                let card = document.createElement("div");
+                card.className = "shop-card" + (isEquipped ? " equipped" : "");
+                
+                let btnHTML = "";
+                if (isEquipped) {
+                    btnHTML = `<button class="buy-btn" disabled>Equipped</button>`;
+                } else if (isUnlocked) {
+                    btnHTML = `<button class="buy-btn" onclick="equipSkin('${skinName}')">Equip</button>`;
+                } else {
+                    let canAfford = totalCoins >= skin.cost;
+                    btnHTML = `<button class="buy-btn" ${canAfford ? '' : 'disabled'} onclick="buySkin('${skinName}', ${skin.cost})">Buy (${skin.cost} Coins)</button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="color-preview" style="background-color: ${skin.color}"></div>
+                    <strong>${skinName}</strong><br>
+                    ${btnHTML}
+                `;
+                shopContainer.appendChild(card);
+            }
+        }
+
+        function buySkin(skinName, cost) {
+            if (totalCoins >= cost) {
+                totalCoins -= cost;
+                unlockedSkins.push(skinName);
+                equippedSkin = skinName; // Auto equip
+                updateCoinsUI();
+                renderShop();
+            }
+        }
+
+        function equipSkin(skinName) {
+            equippedSkin = skinName;
+            updateCoinsUI();
+            renderShop();
+        }
+
+        // --- MAIN LOOP & INPUT ---
+
         function animate() {
             drawBackground();
 
-            if (gameOver) {
-                // Draw everything one last time so it freezes on screen
-                bird.draw();
+            if (gameState === "PLAYING") {
+                handlePipes();
+                bird.update();
                 
-                // Draw pipes frozen
+                // Draw score
+                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+                ctx.font = "bold 60px 'Segoe UI'";
+                ctx.textAlign = "center";
+                ctx.fillText(score, canvas.width / 2, 80);
+                ctx.textAlign = "left";
+                
+                frames++;
+            } else if (gameState === "GAMEOVER") {
+                // Keep drawing static pipes
                 for (let i = 0; i < pipes.length; i++) {
                     let p = pipes[i];
                     ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
@@ -265,55 +446,30 @@
                     ctx.fillRect(p.x, p.bottom, pipeWidth, bottomHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bottomHeight);
                     ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
                 }
-
-                // Game Over Screen Overlay
-                ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = "white";
-                ctx.textAlign = "center";
-                ctx.font = "bold 40px 'Segoe UI'";
-                ctx.fillText("Game Over", canvas.width/2, 220);
-                ctx.font = "24px 'Segoe UI'";
-                ctx.fillText("Score: " + score, canvas.width/2, 270);
-                
-                ctx.fillStyle = "#FFD700";
-                ctx.font = "bold 20px 'Segoe UI'";
-                ctx.fillText("Press 'Q' to Restart", canvas.width/2, 320);
-                
-                ctx.textAlign = "left"; // Reset for score drawing
-                return; 
             }
-
-            // Update and draw objects
-            handlePipes();
-            bird.update();
+            
+            // Always draw bird (unless in shop/menu, but we leave it to show off the skin on the menu!)
             bird.draw();
 
-            // Draw huge background score
-            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-            ctx.font = "bold 60px 'Segoe UI'";
-            ctx.textAlign = "center";
-            ctx.fillText(score, canvas.width / 2, 80);
-            ctx.textAlign = "left";
-
-            frames++;
             requestAnimationFrame(animate);
         }
 
         // Controls
         window.addEventListener("keydown", (e) => {
-            if ((e.code === "Space" || e.code === "ArrowUp") && !gameOver) {
-                bird.flap();
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                if (gameState === "PLAYING") {
+                    bird.flap();
+                } else if (gameState === "MENU") {
+                    startGame();
+                }
             }
-            // Press Q to restart when game is over
-            if ((e.key === "q" || e.key === "Q") && gameOver) {
+            if ((e.key === "q" || e.key === "Q") && gameState === "GAMEOVER") {
                 resetGame();
             }
         });
         
         window.addEventListener("mousedown", () => {
-            if (!gameOver) bird.flap();
+            if (gameState === "PLAYING") bird.flap();
         });
 
         // Start

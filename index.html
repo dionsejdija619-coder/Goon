@@ -1,213 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gooner Quiz 🧠💦</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1a0033, #330066);
-      color: #fff;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-    }
-    h1 {
-      font-size: 3rem;
-      margin: 20px 0;
-      text-shadow: 0 0 20px #ff00ff;
-    }
-    .quiz-container {
-      max-width: 700px;
-      margin: 30px auto;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
-    }
-    .question {
-      font-size: 1.4rem;
-      margin: 30px 0 20px;
-    }
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    button {
-      background: #ff00ff;
-      color: white;
-      border: none;
-      padding: 15px;
-      font-size: 1.1rem;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    button:hover {
-      background: #ff66ff;
-      transform: scale(1.03);
-    }
-    .result {
-      font-size: 2rem;
-      margin: 40px 0;
-      display: none;
-    }
-    .progress {
-      height: 8px;
-      background: #ff00ff;
-      width: 0%;
-      transition: width 0.4s;
-      margin: 20px 0;
-      border-radius: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Clone</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #70c5ce; /* Sky blue background */
+            border: 2px solid #000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            color: white;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <h1>🚀 THE GOONER QUIZ 🚀</h1>
-  <p>How much of a gooner are you really?</p>
 
-  <div class="quiz-container">
-    <div id="progress" class="progress"></div>
-    
-    <div id="question-container">
-      <div class="question" id="question"></div>
-      <div class="options" id="options"></div>
+    <div id="instructions">
+        <h2>Flappy Bird Clone</h2>
+        <p>Press <strong>SPACEBAR</strong> or <strong>CLICK</strong> to flap!</p>
     </div>
 
-    <div id="result" class="result"></div>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
 
-    <button id="next-btn" style="display:none; margin-top:20px;">Next Question →</button>
-  </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-  <script>
-    const questions = [
-      {
-        q: "How long is your average session?",
-        a: ["Under 15 minutes", "30-60 minutes", "1-3 hours", "3+ hours (I lose track of time)"],
-        scores: [1, 3, 6, 10]
-      },
-      {
-        q: "What’s your record without finishing?",
-        a: ["I always finish quick", "30 minutes", "2 hours", "I don’t even remember the last time I finished"],
-        scores: [1, 4, 7, 10]
-      },
-      {
-        q: "Do you edge on purpose?",
-        a: ["What’s edging?", "Sometimes", "Every single time", "Edging is my personality"],
-        scores: [1, 4, 7, 10]
-      },
-      {
-        q: "How many tabs do you usually have open?",
-        a: ["1-2", "5-10", "10-20", "30+ tabs + playlists"],
-        scores: [2, 5, 8, 10]
-      },
-      {
-        q: "Do you goon to things that aren’t even that hot anymore?",
-        a: ["No, I have standards", "Occasionally", "Yes but I feel bad", "Everything is goon fuel now"],
-        scores: [1, 4, 7, 10]
-      },
-      {
-        q: "What’s your go-to goon face?",
-        a: ["Normal face", "Slightly concentrated", "Eyes rolled back", "Full ahegao / brain-melt mode"],
-        scores: [2, 5, 8, 10]
-      },
-      {
-        q: "Have you ever skipped important things to goon?",
-        a: ["Never", "Once or twice", "Pretty often", "My whole life is scheduled around gooning"],
-        scores: [1, 4, 7, 10]
-      },
-      {
-        q: "Do you have a dedicated gooning playlist/folder?",
-        a: ["No", "Just a few videos", "Yes, well organized", "Multiple folders with categories and timers"],
-        scores: [1, 4, 7, 10]
-      },
-      {
-        q: "What do you say out loud while gooning?",
-        a: ["Nothing", "Light moaning", "Full dirty talk to myself", "I speak in tongues and call myself a gooner"],
-        scores: [2, 5, 8, 10]
-      },
-      {
-        q: "Final test: Would you rather...?",
-        a: ["Have sex", "Eat your favorite meal", "Sleep 12 hours", "Goon for 6 hours straight"],
-        scores: [1, 3, 5, 10]
-      }
-    ];
+        let frames = 0;
+        let score = 0;
+        let gameOver = false;
 
-    let currentQuestion = 0;
-    let totalScore = 0;
-
-    const qElement = document.getElementById('question');
-    const optionsElement = document.getElementById('options');
-    const resultElement = document.getElementById('result');
-    const nextBtn = document.getElementById('next-btn');
-    const progressBar = document.getElementById('progress');
-
-    function loadQuestion() {
-      const q = questions[currentQuestion];
-      qElement.textContent = `${currentQuestion + 1}. ${q.q}`;
-      optionsElement.innerHTML = '';
-
-      q.a.forEach((answer, index) => {
-        const btn = document.createElement('button');
-        btn.textContent = answer;
-        btn.onclick = () => {
-          totalScore += q.scores[index];
-          nextQuestion();
+        // Bird object
+        const bird = {
+            x: 50,
+            y: 150,
+            width: 20,
+            height: 20,
+            gravity: 0.35,
+            jump: -6,
+            velocity: 0,
+            draw() {
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Add a little eye
+                ctx.fillStyle = "black";
+                ctx.fillRect(this.x + 12, this.y + 4, 4, 4);
+            },
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+                
+                // Hit the floor or ceiling
+                if (this.y + this.height >= canvas.height || this.y <= 0) {
+                    gameOver = true;
+                }
+            },
+            flap() {
+                this.velocity = this.jump;
+            }
         };
-        optionsElement.appendChild(btn);
-      });
 
-      progressBar.style.width = `${((currentQuestion) / questions.length) * 100}%`;
-      nextBtn.style.display = 'none';
-    }
+        // Pipes array and settings
+        const pipes = [];
+        const pipeWidth = 50;
+        const pipeGap = 130;
 
-    function nextQuestion() {
-      currentQuestion++;
-      if (currentQuestion < questions.length) {
-        loadQuestion();
-      } else {
-        showResult();
-      }
-    }
+        function handlePipes() {
+            // Add a new pipe every 100 frames
+            if (frames % 100 === 0) {
+                let topHeight = Math.random() * (canvas.height - pipeGap - 60) + 30;
+                pipes.push({
+                    x: canvas.width,
+                    top: topHeight,
+                    bottom: topHeight + pipeGap
+                });
+            }
 
-    function showResult() {
-      document.getElementById('question-container').style.display = 'none';
-      nextBtn.style.display = 'none';
-      resultElement.style.display = 'block';
+            for (let i = 0; i < pipes.length; i++) {
+                let p = pipes[i];
+                p.x -= 2; // Pipe speed
 
-      let title = '';
-      let message = '';
+                ctx.fillStyle = "green";
+                // Draw top pipe
+                ctx.fillRect(p.x, 0, pipeWidth, p.top);
+                // Draw bottom pipe
+                ctx.fillRect(p.x, p.bottom, pipeWidth, canvas.height - p.bottom);
 
-      if (totalScore <= 25) {
-        title = "🧍 Casual Browser";
-        message = "You still have a life. Touch some grass king 👑";
-      } else if (totalScore <= 50) {
-        title = "🥉 Amateur Gooner";
-        message = "Solid start. You’re getting there but still have self-control.";
-      } else if (totalScore <= 75) {
-        title = "🥈 Certified Gooner";
-        message = "Respectable. Your brain is nicely rewired.";
-      } else {
-        title = "👑 ULTIMATE GOONER GOD";
-        message = "You have ascended. Porn is now your religion. There is no escape. 💦";
-      }
+                // Collision detection
+                if (
+                    bird.x < p.x + pipeWidth &&
+                    bird.x + bird.width > p.x &&
+                    (bird.y < p.top || bird.y + bird.height > p.bottom)
+                ) {
+                    gameOver = true;
+                }
 
-      resultElement.innerHTML = `
-        <h2>Your Gooner Level:</h2>
-        <h1>${title}</h1>
-        <p>${message}</p>
-        <p style="font-size:1.5rem; margin:30px 0;">Final Score: <strong>${totalScore}/100</strong></p>
-        <button onclick="location.reload()" style="background:#00ffcc; color:black; padding:15px 30px; font-size:1.2rem;">
-          Take Quiz Again
-        </button>
-      `;
-    }
+                // Increase score when passing a pipe safely
+                if (p.x === bird.x) {
+                    score++;
+                }
+            }
 
-    // Start the quiz
-    loadQuestion();
-  </script>
+            // Remove pipes that have gone off-screen
+            if (pipes.length > 0 && pipes[0].x < -pipeWidth) {
+                pipes.shift();
+            }
+        }
+
+        // Main game loop
+        function animate() {
+            if (gameOver) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "40px Arial";
+                ctx.fillText("Game Over", 100, 240);
+                ctx.font = "20px Arial";
+                ctx.fillText("Final Score: " + score, 135, 280);
+                ctx.fillText("Refresh to restart", 125, 320);
+                return; // Stop animation
+            }
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw objects
+            bird.update();
+            bird.draw();
+            handlePipes();
+
+            // Draw score
+            ctx.fillStyle = "white";
+            ctx.font = "30px Arial";
+            ctx.fillText(score, 190, 40);
+
+            frames++;
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners for jumping
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") bird.flap();
+        });
+        window.addEventListener("mousedown", () => {
+            bird.flap();
+        });
+
+        // Start the game
+        animate();
+    </script>
 </body>
 </html>

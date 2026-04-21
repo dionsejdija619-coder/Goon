@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird: Shop Update</title>
+    <title>Flappy Bird: Custom Characters</title>
     <style>
         body {
             margin: 0;
@@ -12,7 +12,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #222;
+            background-color: #1a1a2e;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
         }
@@ -22,13 +22,12 @@
             height: 500px;
         }
         canvas {
-            border: 4px solid #444;
+            border: 4px solid #333;
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             display: block;
         }
         
-        /* UI Overlays */
         .screen {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -36,69 +35,40 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             border-radius: 10px;
             color: white;
-            display: none; /* Hidden by default */
+            display: none; 
+            transition: opacity 0.3s;
         }
-        .active {
-            display: flex !important;
-        }
+        .active { display: flex !important; }
         
-        h1 { margin: 0 0 20px 0; font-size: 36px; text-shadow: 2px 2px 0 #000; color: #FFD700; }
+        h1 { margin: 0 0 20px 0; font-size: 36px; text-shadow: 3px 3px 0 #000; color: #FFD700; }
         h2 { margin: 0 0 10px 0; }
         
         button {
-            background-color: #73BF2E;
-            color: white;
-            border: 3px solid #558A22;
-            padding: 10px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-            transition: transform 0.1s, background-color 0.2s;
+            background-color: #73BF2E; color: white;
+            border: 3px solid #558A22; padding: 10px 20px;
+            font-size: 18px; font-weight: bold;
+            border-radius: 8px; cursor: pointer;
+            margin: 10px; transition: transform 0.1s, background-color 0.2s;
         }
         button:hover { background-color: #85d636; transform: scale(1.05); }
         button:active { transform: scale(0.95); }
         .btn-shop { background-color: #4CB1F7; border-color: #2b8ac9; }
         .btn-shop:hover { background-color: #6bc0fa; }
 
-        /* Shop Grid */
-        #shop-items {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .shop-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            border: 2px solid transparent;
-        }
+        #shop-items { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .shop-card { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 2px solid transparent; }
         .shop-card.equipped { border-color: #FFD700; background: rgba(255, 215, 0, 0.2); }
-        .color-preview {
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            margin: 0 auto 10px auto;
-            border: 2px solid white;
-        }
+        .color-preview { width: 30px; height: 30px; border-radius: 8px; margin: 0 auto 10px auto; border: 2px solid white; }
         .buy-btn { font-size: 14px; padding: 5px 10px; margin: 5px 0 0 0; }
         .buy-btn:disabled { background: #555; border-color: #333; cursor: not-allowed; transform: none; }
 
-        /* HUD */
         #hud {
-            position: absolute;
-            top: 15px; right: 15px;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            text-shadow: 2px 2px 0 #000;
-            pointer-events: none;
-            display: none;
+            position: absolute; top: 15px; right: 15px;
+            color: white; font-weight: bold; font-size: 20px;
+            text-shadow: 2px 2px 0 #000; pointer-events: none; display: none;
         }
     </style>
 </head>
@@ -112,21 +82,19 @@
         <div id="menu-screen" class="screen active">
             <h1>Flappy Bird</h1>
             <button onclick="startGame()">Play Game</button>
-            <button class="btn-shop" onclick="showShop()">Skin Shop</button>
+            <button class="btn-shop" onclick="showShop()">Character Shop</button>
         </div>
 
         <div id="shop-screen" class="screen">
             <h2>Shop</h2>
             <p style="margin-top: 0;">Coins: <span id="shop-coins">0</span></p>
-            <div id="shop-items">
-                </div>
-            <button onclick="showMenu()">Back to Menu</button>
+            <div id="shop-items"></div>
+            <button onclick="showMenu()">Back</button>
         </div>
 
         <div id="game-over-screen" class="screen">
-            <h2 style="font-size: 32px; color: #ff4c4c;">Game Over</h2>
-            <p style="font-size: 24px;">Score: <span id="final-score">0</span></p>
-            <p style="font-size: 18px; color: #FFD700;">Coins Earned: +<span id="earned-coins">0</span></p>
+            <h2 style="font-size: 32px; color: #ff4c4c; margin-bottom: 5px;">Game Over</h2>
+            <p style="font-size: 24px; margin: 5px;">Score: <span id="final-score">0</span></p>
             <button onclick="resetGame()">Play Again (Q)</button>
             <button class="btn-shop" onclick="showMenu()">Main Menu</button>
         </div>
@@ -136,117 +104,122 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Game State Variables
         let gameState = "MENU"; // MENU, PLAYING, GAMEOVER, SHOP
-        let frames = 0;
-        let score = 0;
-        let bgOffset = 0;
-        
-        // Difficulty Variables
-        let baseSpeed = 2.5;
-        let gameSpeed = baseSpeed;
-        let pipeSpawnRate = 90;
+        let frames = 0, score = 0, bgOffset = 0;
+        let baseSpeed = 2.5, gameSpeed = baseSpeed, pipeSpawnRate = 90;
+        let canRestart = false; // Prevents instant restart during death animation
 
-        // Save Data (LocalStorage)
+        // Animation Arrays
+        let coinParticles = [];
+        let coinText = { x: 0, y: 0, text: "", opacity: 0 };
+
+        // Save Data
         let totalCoins = parseInt(localStorage.getItem("flappyCoins")) || 0;
         let unlockedSkins = JSON.parse(localStorage.getItem("flappySkins")) || ["Classic"];
         let equippedSkin = localStorage.getItem("flappyEquipped") || "Classic";
 
-        // Skin Database
         const skins = {
-            "Classic": { color: "#FFD700", cost: 0 },
-            "Ruby":    { color: "#FF3333", cost: 10 },
-            "Sapphire":{ color: "#3399FF", cost: 25 },
-            "Shadow":  { color: "#444444", cost: 50 }
+            "Classic": { preview: "#FFD700", cost: 0 },
+            "Penguin": { preview: "#111111", cost: 10 },
+            "Alien":   { preview: "#32CD32", cost: 25 },
+            "Robot":   { preview: "#888888", cost: 50 }
         };
 
-        // UI Elements
-        const menuScreen = document.getElementById("menu-screen");
-        const shopScreen = document.getElementById("shop-screen");
-        const gameOverScreen = document.getElementById("game-over-screen");
-        const hud = document.getElementById("hud");
-        const coinCount = document.getElementById("coin-count");
-        const shopCoins = document.getElementById("shop-coins");
+        const coinCountUI = document.getElementById("coin-count");
+        const shopCoinsUI = document.getElementById("shop-coins");
 
-        // Update UI counters
         function updateCoinsUI() {
-            coinCount.innerText = totalCoins;
-            shopCoins.innerText = totalCoins;
+            coinCountUI.innerText = totalCoins; shopCoinsUI.innerText = totalCoins;
             localStorage.setItem("flappyCoins", totalCoins);
             localStorage.setItem("flappySkins", JSON.stringify(unlockedSkins));
             localStorage.setItem("flappyEquipped", equippedSkin);
         }
         updateCoinsUI();
 
-        // Bird Object
         const bird = {
-            x: 80,
-            y: 250,
-            radius: 14,
-            gravity: 0.6,
-            jump: -7.5,
-            velocity: 0,
-            flapTimer: 0,
+            x: 80, y: 250, radius: 14,
+            gravity: 0.6, jump: -7.5, velocity: 0, flapTimer: 0,
             
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                
                 let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
                 ctx.rotate(rotation);
 
-                // Draw Body using EQUIPPED SKIN color
-                ctx.fillStyle = skins[equippedSkin].color;
-                ctx.strokeStyle = "#000";
                 ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = "#000";
 
-                // Eye
-                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -5, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(8, -5, 2, 0, Math.PI * 2); ctx.fill();
+                if (equippedSkin === "Classic") {
+                    // Body
+                    ctx.fillStyle = "#FFD700"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    // Eye
+                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -5, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(8, -5, 2, 0, Math.PI * 2); ctx.fill();
+                    // Beak
+                    ctx.fillStyle = "#FF8C00"; ctx.beginPath(); ctx.moveTo(10, 2); ctx.lineTo(24, 6); ctx.lineTo(10, 10); ctx.fill(); ctx.stroke();
+                    // Wing
+                    ctx.fillStyle = "#FFF"; ctx.beginPath();
+                    if (this.flapTimer > 0) { ctx.ellipse(-4, -6, 8, 5, Math.PI / 6, 0, Math.PI * 2); this.flapTimer--; } 
+                    else { ctx.ellipse(-4, 4, 8, 5, -Math.PI / 8, 0, Math.PI * 2); }
+                    ctx.fill(); ctx.stroke();
 
-                // Beak
-                ctx.fillStyle = "#FF8C00"; ctx.beginPath();
-                ctx.moveTo(10, 2); ctx.lineTo(24, 6); ctx.lineTo(10, 10);
-                ctx.fill(); ctx.stroke();
+                } else if (equippedSkin === "Penguin") {
+                    // Body
+                    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    // Belly
+                    ctx.fillStyle = "#FFF"; ctx.beginPath(); ctx.arc(3, 2, this.radius - 4, 0, Math.PI * 2); ctx.fill();
+                    // Eye
+                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -6, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(7, -6, 1.5, 0, Math.PI * 2); ctx.fill();
+                    // Flat Beak
+                    ctx.fillStyle = "#FFA500"; ctx.fillRect(9, 0, 10, 4); ctx.strokeRect(9, 0, 10, 4);
+                    // Flipper Wing
+                    ctx.fillStyle = "#111"; ctx.beginPath();
+                    if (this.flapTimer > 0) { ctx.ellipse(-2, -2, 7, 3, -Math.PI / 4, 0, Math.PI * 2); this.flapTimer--; } 
+                    else { ctx.ellipse(-2, 4, 7, 3, Math.PI / 4, 0, Math.PI * 2); }
+                    ctx.fill(); ctx.stroke();
 
-                // Wing
-                ctx.fillStyle = "#FFF"; ctx.beginPath();
-                if (this.flapTimer > 0) {
-                    ctx.ellipse(-4, -6, 8, 5, Math.PI / 6, 0, Math.PI * 2);
-                    this.flapTimer--;
-                } else {
-                    ctx.ellipse(-4, 4, 8, 5, -Math.PI / 8, 0, Math.PI * 2);
+                } else if (equippedSkin === "Alien") {
+                    // Body
+                    ctx.fillStyle = "#32CD32"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    // Antenna
+                    ctx.beginPath(); ctx.moveTo(0, -this.radius); ctx.lineTo(0, -this.radius - 8); ctx.stroke();
+                    ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(0, -this.radius - 8, 3, 0, Math.PI * 2); ctx.fill();
+                    // Cyclops Eye
+                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(5, -3, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(7, -3, 2.5, 0, Math.PI * 2); ctx.fill();
+                    // UFO Thruster Wing
+                    ctx.fillStyle = "#A9A9A9"; ctx.beginPath();
+                    if (this.flapTimer > 0) { ctx.ellipse(-4, -5, 6, 4, 0, 0, Math.PI * 2); this.flapTimer--; } 
+                    else { ctx.ellipse(-4, 3, 6, 4, 0, 0, Math.PI * 2); }
+                    ctx.fill(); ctx.stroke();
+
+                } else if (equippedSkin === "Robot") {
+                    // Blocky Body
+                    ctx.fillStyle = "#888"; ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                    ctx.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                    // Visor Eye
+                    ctx.fillStyle = "cyan"; ctx.fillRect(2, -8, 10, 5);
+                    // Vent Mouth
+                    ctx.fillStyle = "#444"; ctx.fillRect(6, 2, 8, 6);
+                    // Block Wing
+                    ctx.fillStyle = "#aaa"; 
+                    if (this.flapTimer > 0) { ctx.fillRect(-10, -10, 10, 6); ctx.strokeRect(-10, -10, 10, 6); this.flapTimer--; } 
+                    else { ctx.fillRect(-10, 2, 10, 6); ctx.strokeRect(-10, 2, 10, 6); }
                 }
-                ctx.fill(); ctx.stroke();
 
                 ctx.restore();
             },
             update() {
-                this.velocity += this.gravity;
-                this.y += this.velocity;
-                
-                if (this.y + this.radius >= canvas.height - 40) { 
-                    this.y = canvas.height - 40 - this.radius;
-                    endGame();
-                }
-                if (this.y - this.radius <= 0) {
-                    this.y = this.radius;
-                    this.velocity = 0;
-                }
+                this.velocity += this.gravity; this.y += this.velocity;
+                if (this.y + this.radius >= canvas.height - 40) { this.y = canvas.height - 40 - this.radius; endGame(); }
+                if (this.y - this.radius <= 0) { this.y = this.radius; this.velocity = 0; }
             },
-            flap() {
-                this.velocity = this.jump;
-                this.flapTimer = 10;
-            }
+            flap() { this.velocity = this.jump; this.flapTimer = 10; }
         };
 
-        // Pipes
         let pipes = [];
-        const pipeWidth = 60;
-        const pipeGap = 140;
+        const pipeWidth = 60; const pipeGap = 140;
 
         function handlePipes() {
             if (frames % pipeSpawnRate === 0) {
@@ -255,8 +228,7 @@
             }
 
             for (let i = 0; i < pipes.length; i++) {
-                let p = pipes[i];
-                p.x -= gameSpeed;
+                let p = pipes[i]; p.x -= gameSpeed;
 
                 ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
                 
@@ -265,33 +237,22 @@
                 ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
                 
                 // Draw Bottom
-                let bottomHeight = canvas.height - p.bottom - 40;
-                ctx.fillRect(p.x, p.bottom, pipeWidth, bottomHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bottomHeight);
+                let bHeight = canvas.height - p.bottom - 40;
+                ctx.fillRect(p.x, p.bottom, pipeWidth, bHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bHeight);
                 ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
 
                 // Collision
                 let bLeft = bird.x - bird.radius + 2, bRight = bird.x + bird.radius - 2;
-                let bTop = bird.y - bird.radius + 2, bBottom = bird.y + bird.radius - 2;
+                let bTop = bird.y - bird.radius + 2, bBot = bird.y + bird.radius - 2;
+                if (bRight > p.x && bLeft < p.x + pipeWidth && (bTop < p.top || bBot > p.bottom)) endGame();
 
-                if (bRight > p.x && bLeft < p.x + pipeWidth && (bTop < p.top || bBottom > p.bottom)) {
-                    endGame();
-                }
-
-                // Score & Coin & Difficulty Increase
+                // Score / Coins
                 if (p.x + pipeWidth < bird.x && !p.passed) {
-                    score++;
-                    totalCoins++;
-                    updateCoinsUI();
-                    p.passed = true;
-                    
-                    // INCREASING DIFFICULTY
-                    // Cap max speed at 5.5 so it doesn't become impossible
+                    score++; totalCoins++; updateCoinsUI(); p.passed = true;
                     gameSpeed = Math.min(baseSpeed + (score * 0.1), 5.5);
-                    // Adjust spawn rate so pipes don't get too far apart when moving faster
                     pipeSpawnRate = Math.max(Math.floor(225 / gameSpeed), 40);
                 }
             }
-
             if (pipes.length > 0 && pipes[0].x < -pipeWidth - 10) pipes.shift();
         }
 
@@ -320,159 +281,163 @@
             }
         }
 
-        // --- GAME CONTROL FUNCTIONS ---
-
         function startGame() {
-            gameState = "PLAYING";
-            menuScreen.classList.remove("active");
+            document.getElementById("menu-screen").classList.remove("active");
             hud.style.display = "block";
             resetGameVariables();
         }
 
         function resetGame() {
-            gameState = "PLAYING";
-            gameOverScreen.classList.remove("active");
+            document.getElementById("game-over-screen").classList.remove("active");
+            hud.style.display = "block";
             resetGameVariables();
         }
 
         function resetGameVariables() {
-            bird.y = 250;
-            bird.velocity = 0;
-            bird.flapTimer = 0;
-            pipes = [];
-            score = 0;
-            frames = 0;
-            gameSpeed = baseSpeed;
-            pipeSpawnRate = 90;
+            gameState = "PLAYING"; bird.y = 250; bird.velocity = 0; bird.flapTimer = 0;
+            pipes = []; score = 0; frames = 0; gameSpeed = baseSpeed; pipeSpawnRate = 90;
+            coinParticles = []; coinText.opacity = 0; canRestart = false;
         }
 
         function endGame() {
+            if (gameState === "GAMEOVER") return; // Prevent double trigger
             gameState = "GAMEOVER";
             document.getElementById("final-score").innerText = score;
-            document.getElementById("earned-coins").innerText = score; // Earned 1 coin per score
-            gameOverScreen.classList.add("active");
-            hud.style.display = "none";
+            
+            // Generate Coin Explosion Particles
+            let coinsToSpawn = Math.min(score, 40); // Cap visuals at 40 coins so it doesn't lag
+            for(let i = 0; i < coinsToSpawn; i++) {
+                coinParticles.push({
+                    x: bird.x, y: bird.y,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() * -12) - 4, // Shoot upwards
+                    gravity: 0.5,
+                    size: Math.random() * 3 + 5,
+                    rotation: Math.random() * Math.PI * 2,
+                    spinSpeed: (Math.random() - 0.5) * 0.3
+                });
+            }
+
+            if (score > 0) {
+                coinText = { x: bird.x, y: bird.y - 30, text: "+" + score + " Coins!", opacity: 1 };
+            }
+
+            // Delay showing the menu so the player sees the coins fly
+            setTimeout(() => {
+                document.getElementById("game-over-screen").classList.add("active");
+                hud.style.display = "none";
+                canRestart = true;
+            }, 1500); 
         }
 
         function showMenu() {
             gameState = "MENU";
-            shopScreen.classList.remove("active");
-            gameOverScreen.classList.remove("active");
-            menuScreen.classList.add("active");
+            document.getElementById("shop-screen").classList.remove("active");
+            document.getElementById("game-over-screen").classList.remove("active");
+            document.getElementById("menu-screen").classList.add("active");
             hud.style.display = "none";
         }
 
-        // --- SHOP FUNCTIONS ---
-
         function showShop() {
             gameState = "SHOP";
-            menuScreen.classList.remove("active");
-            shopScreen.classList.add("active");
+            document.getElementById("menu-screen").classList.remove("active");
+            document.getElementById("shop-screen").classList.add("active");
             renderShop();
         }
 
         function renderShop() {
-            const shopContainer = document.getElementById("shop-items");
-            shopContainer.innerHTML = ""; // Clear current
+            const container = document.getElementById("shop-items");
+            container.innerHTML = ""; 
             
-            for (let skinName in skins) {
-                let skin = skins[skinName];
-                let isUnlocked = unlockedSkins.includes(skinName);
-                let isEquipped = equippedSkin === skinName;
+            for (let name in skins) {
+                let skin = skins[name];
+                let isUnlocked = unlockedSkins.includes(name);
+                let isEquipped = equippedSkin === name;
 
                 let card = document.createElement("div");
                 card.className = "shop-card" + (isEquipped ? " equipped" : "");
                 
-                let btnHTML = "";
-                if (isEquipped) {
-                    btnHTML = `<button class="buy-btn" disabled>Equipped</button>`;
-                } else if (isUnlocked) {
-                    btnHTML = `<button class="buy-btn" onclick="equipSkin('${skinName}')">Equip</button>`;
-                } else {
-                    let canAfford = totalCoins >= skin.cost;
-                    btnHTML = `<button class="buy-btn" ${canAfford ? '' : 'disabled'} onclick="buySkin('${skinName}', ${skin.cost})">Buy (${skin.cost} Coins)</button>`;
-                }
+                let btnHTML = isEquipped ? `<button class="buy-btn" disabled>Equipped</button>` :
+                              isUnlocked ? `<button class="buy-btn" onclick="equipSkin('${name}')">Equip</button>` :
+                              `<button class="buy-btn" ${totalCoins >= skin.cost ? '' : 'disabled'} onclick="buySkin('${name}', ${skin.cost})">Buy (${skin.cost})</button>`;
 
-                card.innerHTML = `
-                    <div class="color-preview" style="background-color: ${skin.color}"></div>
-                    <strong>${skinName}</strong><br>
-                    ${btnHTML}
-                `;
-                shopContainer.appendChild(card);
+                // Use border-radius for different shapes in shop preview
+                let shapeClass = name === "Classic" ? "border-radius: 50%;" :
+                                 name === "Penguin" ? "border-radius: 50% 50% 40% 40%;" :
+                                 name === "Alien"   ? "border-radius: 50%;" : "border-radius: 4px;";
+
+                card.innerHTML = `<div class="color-preview" style="background-color: ${skin.preview}; ${shapeClass}"></div>
+                                  <strong>${name}</strong><br>${btnHTML}`;
+                container.appendChild(card);
             }
         }
 
-        function buySkin(skinName, cost) {
-            if (totalCoins >= cost) {
-                totalCoins -= cost;
-                unlockedSkins.push(skinName);
-                equippedSkin = skinName; // Auto equip
-                updateCoinsUI();
-                renderShop();
-            }
+        function buySkin(name, cost) {
+            if (totalCoins >= cost) { totalCoins -= cost; unlockedSkins.push(name); equippedSkin = name; updateCoinsUI(); renderShop(); }
         }
-
-        function equipSkin(skinName) {
-            equippedSkin = skinName;
-            updateCoinsUI();
-            renderShop();
-        }
-
-        // --- MAIN LOOP & INPUT ---
+        function equipSkin(name) { equippedSkin = name; updateCoinsUI(); renderShop(); }
 
         function animate() {
             drawBackground();
 
             if (gameState === "PLAYING") {
-                handlePipes();
-                bird.update();
-                
+                handlePipes(); bird.update();
                 // Draw score
-                ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-                ctx.font = "bold 60px 'Segoe UI'";
-                ctx.textAlign = "center";
-                ctx.fillText(score, canvas.width / 2, 80);
-                ctx.textAlign = "left";
-                
+                ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; ctx.font = "bold 60px 'Segoe UI'";
+                ctx.textAlign = "center"; ctx.fillText(score, canvas.width / 2, 80); ctx.textAlign = "left";
                 frames++;
             } else if (gameState === "GAMEOVER") {
-                // Keep drawing static pipes
-                for (let i = 0; i < pipes.length; i++) {
-                    let p = pipes[i];
+                // Draw static pipes
+                pipes.forEach(p => {
                     ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
                     ctx.fillRect(p.x, 0, pipeWidth, p.top); ctx.strokeRect(p.x, 0, pipeWidth, p.top);
                     ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
-                    let bottomHeight = canvas.height - p.bottom - 40;
-                    ctx.fillRect(p.x, p.bottom, pipeWidth, bottomHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bottomHeight);
+                    let bHeight = canvas.height - p.bottom - 40;
+                    ctx.fillRect(p.x, p.bottom, pipeWidth, bHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bHeight);
                     ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
+                });
+
+                // Animate Coins Exploding
+                coinParticles.forEach(c => {
+                    c.vy += c.gravity; c.x += c.vx; c.y += c.vy; c.rotation += c.spinSpeed;
+                    ctx.save();
+                    ctx.translate(c.x, c.y);
+                    ctx.scale(Math.abs(Math.sin(c.rotation)), 1); // 3D Spin effect
+                    ctx.fillStyle = "#FFD700"; ctx.strokeStyle = "#DAA520"; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.arc(0, 0, c.size, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                });
+
+                // Floating Text Animation
+                if (coinText.opacity > 0) {
+                    coinText.y -= 1; coinText.opacity -= 0.015;
+                    ctx.fillStyle = `rgba(255, 215, 0, ${Math.max(0, coinText.opacity)})`;
+                    ctx.strokeStyle = `rgba(0, 0, 0, ${Math.max(0, coinText.opacity)})`;
+                    ctx.font = "bold 26px 'Segoe UI'"; ctx.lineWidth = 3; ctx.textAlign = "center";
+                    ctx.strokeText(coinText.text, coinText.x, coinText.y);
+                    ctx.fillText(coinText.text, coinText.x, coinText.y);
+                    ctx.textAlign = "left";
                 }
             }
             
-            // Always draw bird (unless in shop/menu, but we leave it to show off the skin on the menu!)
             bird.draw();
-
             requestAnimationFrame(animate);
         }
 
-        // Controls
         window.addEventListener("keydown", (e) => {
             if (e.code === "Space" || e.code === "ArrowUp") {
-                if (gameState === "PLAYING") {
-                    bird.flap();
-                } else if (gameState === "MENU") {
-                    startGame();
-                }
+                if (gameState === "PLAYING") bird.flap();
+                else if (gameState === "MENU") startGame();
             }
-            if ((e.key === "q" || e.key === "Q") && gameState === "GAMEOVER") {
-                resetGame();
-            }
+            // Only allow restart after the coin animation is finished
+            if ((e.key === "q" || e.key === "Q") && gameState === "GAMEOVER" && canRestart) resetGame();
         });
         
         window.addEventListener("mousedown", () => {
             if (gameState === "PLAYING") bird.flap();
         });
 
-        // Start
         animate();
     </script>
 </body>

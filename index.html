@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Flip: 8-Bit Edition</title>
+    <title>Gravity Flip: Portal Update</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; background-color: #000; /* Pitch black */
-            font-family: 'Press Start 2P', monospace; /* Retro font */
+            height: 100vh; background-color: #000;
+            font-family: 'Press Start 2P', monospace;
             overflow: hidden; user-select: none;
         }
 
         #game-container {
             position: relative; width: 800px; height: 400px;
             border: 4px solid #fff; background-color: #111;
+            transition: background-color 0.5s; /* Smooth transition when entering portal */
         }
 
-        /* CRT Scanline Effect */
+        /* CRT Effect */
         #game-container::after {
             content: " "; display: block; position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
@@ -39,7 +40,7 @@
         .active { display: flex !important; }
 
         h1 { font-size: 36px; margin: 0 0 15px 0; color: #fff; text-shadow: 4px 4px 0 #E52521; text-align: center; line-height: 1.4; }
-        p { font-size: 12px; margin-bottom: 25px; color: #aaa; }
+        p { font-size: 12px; margin-bottom: 25px; color: #aaa; text-align: center; line-height: 1.5; }
 
         .hud {
             position: absolute; top: 15px; left: 20px; right: 20px;
@@ -51,24 +52,26 @@
         button {
             background: #000; color: #fff; border: 4px solid #fff;
             padding: 15px 20px; font-size: 14px; font-family: 'Press Start 2P', monospace;
-            cursor: pointer; text-transform: uppercase; margin: 5px;
-            box-shadow: 4px 4px 0 #555;
+            cursor: pointer; text-transform: uppercase; margin: 5px; box-shadow: 4px 4px 0 #555;
         }
         button:hover { background: #fff; color: #000; box-shadow: 4px 4px 0 #E52521; }
         
         .btn-shop { border-color: #F6D305; color: #F6D305; box-shadow: 4px 4px 0 #A88F00; }
         .btn-shop:hover { background: #F6D305; color: #000; box-shadow: 4px 4px 0 #fff; }
 
-        /* Shop Grid */
         #shop-content { display: flex; gap: 20px; margin-bottom: 20px; width: 90%; justify-content: center; }
         .shop-column { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-        .shop-item {
-            background: #111; border: 2px solid #555;
-            padding: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;
-        }
+        .shop-item { background: #111; border: 2px solid #555; padding: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
         .shop-item.equipped { border-color: #fff; background: #222; }
         .buy-btn { font-size: 10px; padding: 5px 8px; margin: 0; border-width: 2px; box-shadow: 2px 2px 0 #555; }
         .buy-btn:disabled { background: #333; border-color: #222; color: #666; cursor: not-allowed; box-shadow: none; }
+        
+        /* Alert Text */
+        #mode-alert {
+            position: absolute; top: 100px; width: 100%; text-align: center;
+            color: #00ffff; font-size: 20px; text-shadow: 2px 2px 0 #ff00ff;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 5;
+        }
     </style>
 </head>
 <body>
@@ -76,14 +79,16 @@
     <div id="game-container">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         
+        <div id="mode-alert">HOLD SPACE TO FLY!</div>
+
         <div class="hud">
             <div>SCORE: <span id="scoreUI">0</span> <span style="font-size: 10px; color:#aaa;">(HI: <span id="highScoreUI">0</span>)</span></div>
             <div class="hud-coins">C: <span id="coinUI">0</span></div>
         </div>
 
         <div id="start-screen" class="ui-layer active">
-            <h1>GRAVITY FLIP<br>8-BIT</h1>
-            <p>SPACE / CLICK TO FLIP</p>
+            <h1>GRAVITY FLIP</h1>
+            <p>SPACE / CLICK to Flip Gravity.<br>Survive to reach the portal!</p>
             <div>
                 <button onclick="startGame()">PLAY</button>
                 <button class="btn-shop" onclick="showShop()">SHOP</button>
@@ -93,21 +98,15 @@
         <div id="shop-screen" class="ui-layer">
             <h2 style="color: #F6D305; margin: 0 0 15px 0; font-size: 20px;">ITEM SHOP</h2>
             <p style="color: #F6D305;">COINS: <span id="shopCoinUI">0</span></p>
-            
             <div id="shop-content">
-                <div class="shop-column" id="skins-list">
-                    <h3 style="margin:0 0 10px 0; text-align:center; font-size: 12px; color:#fff;">SKINS</h3>
-                </div>
-                <div class="shop-column" id="trails-list">
-                    <h3 style="margin:0 0 10px 0; text-align:center; font-size: 12px; color:#fff;">TRAILS</h3>
-                </div>
+                <div class="shop-column" id="skins-list"><h3 style="margin:0 0 10px 0; text-align:center; font-size: 12px; color:#fff;">SKINS</h3></div>
+                <div class="shop-column" id="trails-list"><h3 style="margin:0 0 10px 0; text-align:center; font-size: 12px; color:#fff;">TRAILS</h3></div>
             </div>
-            
             <button onclick="hideShop()">BACK</button>
         </div>
 
         <div id="game-over-screen" class="ui-layer">
-            <h1 style="color: #E52521; text-shadow: 4px 4px 0 #fff;">GAME OVER</h1>
+            <h1 style="color: #E52521; text-shadow: 4px 4px 0 #fff;">CRASHED</h1>
             <p>SCORE: <span id="finalScore">0</span> | COINS: <span id="finalCoins">0</span></p>
             <div>
                 <button onclick="resetGame()">AGAIN</button>
@@ -119,17 +118,13 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const gameContainer = document.getElementById("game-container");
+        const modeAlert = document.getElementById("mode-alert");
 
         // UI
-        const screens = {
-            start: document.getElementById("start-screen"),
-            shop: document.getElementById("shop-screen"),
-            gameOver: document.getElementById("game-over-screen")
-        };
-        const scoreUI = document.getElementById("scoreUI");
-        const highScoreUI = document.getElementById("highScoreUI");
-        const coinUI = document.getElementById("coinUI");
-        const shopCoinUI = document.getElementById("shopCoinUI");
+        const screens = { start: document.getElementById("start-screen"), shop: document.getElementById("shop-screen"), gameOver: document.getElementById("game-over-screen") };
+        const scoreUI = document.getElementById("scoreUI"); const highScoreUI = document.getElementById("highScoreUI");
+        const coinUI = document.getElementById("coinUI"); const shopCoinUI = document.getElementById("shopCoinUI");
 
         // Save Data
         let totalCoins = parseInt(localStorage.getItem("gf8_coins")) || 0;
@@ -139,22 +134,10 @@
         let equippedSkin = localStorage.getItem("gf8_eq_skin") || "Classic";
         let equippedTrail = localStorage.getItem("gf8_eq_trail") || "None";
 
-        highScoreUI.innerText = highScore;
-        coinUI.innerText = totalCoins;
+        highScoreUI.innerText = highScore; coinUI.innerText = totalCoins;
 
-        // Retro Shop Data
-        const skinsData = {
-            "Classic": { color: "#ffffff", cost: 0 },
-            "Gameboy": { color: "#8bac0f", cost: 50 },
-            "C-64": { color: "#8B8BFF", cost: 100 },
-            "Vampire": { color: "#E52521", cost: 200 }
-        };
-        const trailsData = {
-            "None": { cost: 0 },
-            "Pixels": { cost: 50 },
-            "Glitch": { cost: 150 },
-            "Shadow": { cost: 200 }
-        };
+        const skinsData = { "Classic": { color: "#ffffff", cost: 0 }, "Gameboy": { color: "#8bac0f", cost: 50 }, "C-64": { color: "#8B8BFF", cost: 100 }, "Vampire": { color: "#E52521", cost: 200 } };
+        const trailsData = { "None": { cost: 0 }, "Pixels": { cost: 50 }, "Glitch": { cost: 150 }, "Shadow": { cost: 200 } };
 
         function updateSave() {
             localStorage.setItem("gf8_coins", totalCoins);
@@ -165,38 +148,56 @@
             coinUI.innerText = totalCoins; shopCoinUI.innerText = totalCoins;
         }
 
-        // Game State - Faster base speed for difficulty
+        // Game State Variables
         let gameState = "START";
         let frames = 0; let score = 0; let runCoins = 0;
-        let gameSpeed = 7, baseSpeed = 7; 
+        let gameSpeed = 6, baseSpeed = 6; 
         let obstacleTimer = 0, coinTimer = 0;
+        
+        // New Mechanics Variables
+        let currentMode = "FLIP"; // "FLIP" or "FLY"
+        let portalSpawned = false;
+        let isHoldingInput = false; // Tracks if user is holding space/click for flying
 
         const player = {
-            x: 100, y: 350, size: 24, vy: 0, gravity: 1.6, isFlipped: false, // Heavier gravity for snappier falls
+            x: 100, y: 350, size: 24, vy: 0, gravity: 1.6, isFlipped: false,
             
             update() {
-                this.vy += this.isFlipped ? -this.gravity : this.gravity;
+                if (currentMode === "FLIP") {
+                    this.vy += this.isFlipped ? -this.gravity : this.gravity;
+                } else if (currentMode === "FLY") {
+                    // Geometry Dash Ship Physics
+                    if (isHoldingInput) {
+                        this.vy -= 0.6; // Thrust up
+                    } else {
+                        this.vy += 0.5; // Fall down
+                    }
+                    // Terminal velocity so you don't shoot out of control
+                    if (this.vy < -8) this.vy = -8;
+                    if (this.vy > 8) this.vy = 8;
+                }
+
                 this.y += this.vy;
                 
+                // Floor and Ceiling Collision
                 if (this.y + this.size > canvas.height - 24) { this.y = canvas.height - 24 - this.size; this.vy = 0; }
                 if (this.y < 24) { this.y = 24; this.vy = 0; }
             },
             
             draw() {
                 ctx.fillStyle = skinsData[equippedSkin].color;
-                // Draw 8-bit style block (solid, no blur)
                 ctx.fillRect(this.x, this.y, this.size, this.size);
-                
-                // Add an "eye" for character detail
-                ctx.fillStyle = "#000";
-                let eyeY = this.isFlipped ? this.y + 16 : this.y + 4;
+                ctx.fillStyle = "#000"; // Eye
+                let eyeY = (currentMode === "FLIP" && this.isFlipped) ? this.y + 16 : this.y + 4;
                 ctx.fillRect(this.x + 14, eyeY, 6, 6);
             },
 
-            flip() {
-                this.isFlipped = !this.isFlipped;
-                this.vy = this.isFlipped ? -6 : 6;
-                spawnParticles(this.x + this.size/2, this.y + this.size/2, 6, skinsData[equippedSkin].color);
+            action() {
+                if (currentMode === "FLIP") {
+                    this.isFlipped = !this.isFlipped;
+                    this.vy = this.isFlipped ? -6 : 6;
+                    spawnParticles(this.x + this.size/2, this.y + this.size/2, 6, skinsData[equippedSkin].color);
+                }
             }
         };
 
@@ -205,17 +206,33 @@
 
         function spawnParticles(x, y, amount, color) {
             for (let i = 0; i < amount; i++) {
-                particles.push({
-                    x: x, y: y, size: 4 + Math.random() * 4,
-                    vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10,
-                    life: 1, color: color
-                });
+                particles.push({ x: x, y: y, size: 4 + Math.random() * 4, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10, life: 1, color: color });
+            }
+        }
+
+        // --- ENTITIES ---
+
+        class Portal {
+            constructor() {
+                this.type = "portal";
+                this.width = 60; this.height = canvas.height;
+                this.x = canvas.width; this.y = 0;
+            }
+            update() { this.x -= gameSpeed; }
+            draw() {
+                // Pulsing retro neon portal
+                ctx.fillStyle = (frames % 10 < 5) ? "#00ffff" : "#ff00ff";
+                ctx.globalAlpha = 0.4;
+                ctx.fillRect(this.x, 0, this.width, this.height);
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(this.x + 20, 0, 20, this.height); // Core of the portal
             }
         }
 
         class Coin {
             constructor() {
-                this.type = "coin"; this.size = 16;
+                this.type = "coin"; this.size = 20; // Increased size slightly
                 this.x = canvas.width;
                 this.y = 50 + Math.random() * (canvas.height - 100);
                 this.passed = false; this.pulse = 0;
@@ -224,36 +241,22 @@
             draw() {
                 let offset = Math.sin(this.pulse) * 4;
                 ctx.fillStyle = "#F6D305";
-                // Blocky coin drawing
                 ctx.fillRect(this.x, this.y + offset, this.size, this.size);
                 ctx.fillStyle = "#fff";
-                ctx.fillRect(this.x + 4, this.y + 4 + offset, 4, 8); // Coin shine
+                ctx.fillRect(this.x + 4, this.y + 4 + offset, 4, 8); 
             }
         }
 
         class Obstacle {
             constructor(type, customY = null, customHeight = null, isGhost = false) {
                 this.type = "obs";
-                this.width = 32; 
+                this.width = 40; 
                 this.x = canvas.width;
-                this.passed = isGhost; // Ghost obstacles don't give score
-                this.moving = false;
+                this.passed = isGhost;
 
                 if (type === "standard") {
-                    this.height = 40 + Math.random() * 80;
+                    this.height = 40 + Math.random() * 100;
                     this.y = Math.random() > 0.5 ? 24 : canvas.height - 24 - this.height;
-                } else if (type === "middle") {
-                    this.height = 80;
-                    this.y = (canvas.height / 2) - 40;
-                } else if (type === "long") {
-                    this.width = 150 + Math.random() * 100;
-                    this.height = 30;
-                    this.y = Math.random() > 0.5 ? 24 : canvas.height - 24 - this.height;
-                } else if (type === "moving") {
-                    this.height = 64;
-                    this.y = canvas.height / 2;
-                    this.moving = true;
-                    this.dir = Math.random() > 0.5 ? 1 : -1;
                 } else if (type === "gate_top") {
                     this.height = customHeight;
                     this.y = 24;
@@ -262,39 +265,23 @@
                     this.y = customY;
                 }
             }
-
-            update() {
-                this.x -= gameSpeed;
-                if (this.moving) {
-                    this.y += this.dir * 4;
-                    if (this.y < 24 || this.y + this.height > canvas.height - 24) this.dir *= -1;
-                }
-            }
-
+            update() { this.x -= gameSpeed; }
             draw() {
-                ctx.fillStyle = "#E52521"; // Arcade Red
+                ctx.fillStyle = "#E52521";
                 ctx.fillRect(this.x, this.y, this.width, this.height);
-                
-                // Add pixel border detailing inside the block
                 ctx.fillStyle = "#821111";
                 ctx.fillRect(this.x + 4, this.y + 4, this.width - 8, this.height - 8);
             }
         }
 
         function spawnObstacles() {
-            let obsType = Math.random();
-            if (obsType < 0.35) {
+            if (currentMode === "FLIP") {
+                // Keep it easy in the beginning
                 entities.push(new Obstacle("standard"));
-            } else if (obsType < 0.55) {
-                entities.push(new Obstacle("middle"));
-            } else if (obsType < 0.75) {
-                entities.push(new Obstacle("long"));
-            } else if (obsType < 0.85 && gameSpeed > 8) { // Only spawns when game speeds up
-                entities.push(new Obstacle("moving"));
-            } else {
-                // The Gate Pattern (2 blocks)
-                let gapCenter = 100 + Math.random() * 200;
-                let gapSize = 100; // Size of the hole to fit through
+            } else if (currentMode === "FLY") {
+                // Geometry Dash style pillars you have to fly between
+                let gapCenter = 120 + Math.random() * 160;
+                let gapSize = 130; // The space you fly through
                 
                 let topHeight = gapCenter - (gapSize/2) - 24;
                 let bottomY = gapCenter + (gapSize/2);
@@ -305,25 +292,19 @@
             }
         }
 
-        // --- SHOP LOGIC ---
+        // --- SHOP ---
         function showMenu() { gameState = "START"; screens.gameOver.classList.remove("active"); screens.start.classList.add("active"); }
-        function showShop() { 
-            gameState = "SHOP"; screens.start.classList.remove("active"); screens.shop.classList.add("active"); 
-            shopCoinUI.innerText = totalCoins; renderShop(); 
-        }
+        function showShop() { gameState = "SHOP"; screens.start.classList.remove("active"); screens.shop.classList.add("active"); shopCoinUI.innerText = totalCoins; renderShop(); }
         function hideShop() { gameState = "START"; screens.shop.classList.remove("active"); screens.start.classList.add("active"); }
 
         function renderShop() {
             const renderList = (data, unlocked, equipped, containerId, category) => {
                 let html = `<h3 style="margin:0 0 10px 0; text-align:center; font-size: 12px; color:#fff;">${category.toUpperCase()}</h3>`;
                 for (let key in data) {
-                    let item = data[key];
-                    let isEq = equipped === key; let isUn = unlocked.includes(key);
-                    
+                    let item = data[key]; let isEq = equipped === key; let isUn = unlocked.includes(key);
                     let btn = isEq ? `<button class="buy-btn" disabled>EQ</button>` :
                               isUn ? `<button class="buy-btn" onclick="equipItem('${category}', '${key}')">USE</button>` :
                               `<button class="buy-btn" ${totalCoins >= item.cost ? '' : 'disabled'} onclick="buyItem('${category}', '${key}', ${item.cost})">${item.cost} C</button>`;
-                    
                     let style = category === 'skins' ? `color: ${item.color};` : `color: #fff;`;
                     html += `<div class="shop-item ${isEq ? 'equipped' : ''}"><span style="${style}">${key}</span>${btn}</div>`;
                 }
@@ -336,15 +317,11 @@
         function buyItem(cat, key, cost) {
             if (totalCoins >= cost) {
                 totalCoins -= cost;
-                if (cat === 'skins') { unlockedSkins.push(key); equippedSkin = key; } 
-                else { unlockedTrails.push(key); equippedTrail = key; }
+                if (cat === 'skins') { unlockedSkins.push(key); equippedSkin = key; } else { unlockedTrails.push(key); equippedTrail = key; }
                 updateSave(); renderShop();
             }
         }
-        function equipItem(cat, key) {
-            if (cat === 'skins') equippedSkin = key; else equippedTrail = key;
-            updateSave(); renderShop();
-        }
+        function equipItem(cat, key) { if (cat === 'skins') equippedSkin = key; else equippedTrail = key; updateSave(); renderShop(); }
 
         // --- GAME LOOP ---
         function startGame() { screens.start.classList.remove("active"); resetGameVariables(); }
@@ -352,13 +329,17 @@
 
         function resetGameVariables() {
             gameState = "PLAYING"; player.y = 350; player.vy = 0; player.isFlipped = false;
+            currentMode = "FLIP"; portalSpawned = false; isHoldingInput = false;
+            gameContainer.style.backgroundColor = "#111"; // Reset background
+            modeAlert.style.opacity = "0"; // Hide alert
+            
             entities = []; particles = []; score = 0; runCoins = 0; frames = 0;
-            gameSpeed = baseSpeed; obstacleTimer = 20; coinTimer = 60;
-            scoreUI.innerText = score; updateSave();
+            gameSpeed = baseSpeed; obstacleTimer = 40; coinTimer = 60;
+            scoreUI.innerText = score; coinUI.innerText = totalCoins; updateSave();
         }
 
         function die() {
-            gameState = "GAMEOVER";
+            gameState = "GAMEOVER"; isHoldingInput = false;
             spawnParticles(player.x + player.size/2, player.y + player.size/2, 30, skinsData[equippedSkin].color);
             if (score > highScore) { highScore = score; localStorage.setItem("gf8_highscore", highScore); highScoreUI.innerText = highScore; }
             document.getElementById("finalScore").innerText = score;
@@ -367,31 +348,15 @@
             setTimeout(() => screens.gameOver.classList.add("active"), 800);
         }
 
-        function spawnTrail() {
-            if (frames % 4 !== 0 || equippedTrail === "None") return;
-            let color = skinsData[equippedSkin].color;
-            if (equippedTrail === "Glitch") {
-                let colors = ["#E52521", "#00ffff", "#ffffff"];
-                color = colors[Math.floor(Math.random() * colors.length)];
-            } else if (equippedTrail === "Shadow") {
-                color = "#444";
-            }
-            
-            particles.push({
-                x: player.x + player.size/2 - 4, y: player.y + (player.isFlipped ? 0 : player.size) - 4,
-                size: 8, vx: -gameSpeed * 0.5, vy: 0, life: 1, color: color
-            });
-        }
-
         function animate() {
-            ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Let CSS background show through
 
-            // 8-Bit Checkerboard Floors
+            // Floors
             for (let i = 0; i < canvas.width / 24 + 1; i++) {
                 let offset = (frames * gameSpeed) % 48;
                 ctx.fillStyle = (i % 2 === 0) ? "#333" : "#555";
-                ctx.fillRect(i * 24 - offset, 0, 24, 24); // Top
-                ctx.fillRect(i * 24 - offset, canvas.height - 24, 24, 24); // Bottom
+                ctx.fillRect(i * 24 - offset, 0, 24, 24); 
+                ctx.fillRect(i * 24 - offset, canvas.height - 24, 24, 24); 
             }
 
             // Particles
@@ -402,15 +367,28 @@
             }
 
             if (gameState === "PLAYING") {
-                player.update(); spawnTrail();
-
-                // Spawners
-                obstacleTimer--; coinTimer--;
-                if (obstacleTimer <= 0) {
-                    spawnObstacles();
-                    // Spawns get faster as speed increases
-                    obstacleTimer = Math.max(30, 80 - (gameSpeed * 3));
+                player.update();
+                
+                // Trail logic
+                if (frames % 4 === 0 && equippedTrail !== "None") {
+                    let c = skinsData[equippedSkin].color;
+                    if (equippedTrail === "Glitch") c = ["#E52521", "#00ffff", "#ffffff"][Math.floor(Math.random()*3)];
+                    if (equippedTrail === "Shadow") c = "#444";
+                    particles.push({ x: player.x, y: player.y, size: 8, vx: -gameSpeed*0.5, vy: 0, life: 1, color: c });
                 }
+
+                obstacleTimer--; coinTimer--;
+
+                // Game Progression & Spawning
+                if (score >= 150 && !portalSpawned) {
+                    entities.push(new Portal());
+                    portalSpawned = true;
+                    obstacleTimer = 100; // Give a gap before new mode starts
+                } else if (obstacleTimer <= 0) {
+                    spawnObstacles();
+                    obstacleTimer = Math.max(40, 80 - (gameSpeed * 2));
+                }
+
                 if (coinTimer <= 0) {
                     entities.push(new Coin());
                     coinTimer = 50 + Math.random() * 80;
@@ -420,52 +398,65 @@
                     let ent = entities[i];
                     ent.update(); ent.draw();
 
-                    // Pixel-perfect AABB Collision
-                    let hitX = player.x < ent.x + ent.width && player.x + player.size > ent.x;
-                    if (ent.type === "coin") {
-                        let hitY = player.y < ent.y + ent.size && player.y + player.size > ent.y;
-                        if (hitX && hitY) {
+                    // Collision checking
+                    let eWidth = ent.width || ent.size;
+                    let eHeight = ent.height || ent.size;
+                    // Adjusted hitbox for coins to ignore the visual bobbing offset
+                    let entY = ent.type === "coin" ? ent.y : ent.y; 
+
+                    let hitX = player.x < ent.x + eWidth && player.x + player.size > ent.x;
+                    let hitY = player.y < entY + eHeight && player.y + player.size > entY;
+
+                    if (hitX && hitY) {
+                        if (ent.type === "portal") {
+                            // ENTER FLY MODE
+                            currentMode = "FLY";
+                            player.vy = 0; // Reset velocity
+                            gameContainer.style.backgroundColor = "#240b36"; // Deep purple background
+                            modeAlert.style.opacity = "1"; // Show text
+                            setTimeout(() => modeAlert.style.opacity = "0", 2500); // Hide text
+                        } else if (ent.type === "coin") {
                             runCoins++; coinUI.innerText = totalCoins + runCoins;
                             spawnParticles(ent.x, ent.y, 8, "#F6D305");
                             entities.splice(i, 1); continue;
-                        }
-                    } else if (ent.type === "obs") {
-                        let hitY = player.y < ent.y + ent.height && player.y + player.size > ent.y;
-                        if (hitX && hitY) {
+                        } else if (ent.type === "obs") {
                             die();
                         }
                     }
 
                     // Score tracking
-                    if (ent.type === "obs" && ent.x + ent.width < player.x && !ent.passed) {
+                    if (ent.type === "obs" && ent.x + eWidth < player.x && !ent.passed) {
                         score += 10; scoreUI.innerText = score; ent.passed = true;
-                        gameSpeed += 0.04; // Speed scales much faster now
+                        gameSpeed += 0.05;
                     }
-                    if (ent.x + (ent.width || ent.size) < -50) entities.splice(i, 1);
+
+                    if (ent.x + eWidth < -50) entities.splice(i, 1);
                 }
                 frames++;
             } else if (gameState === "GAMEOVER") {
                 entities.forEach(e => e.draw());
             }
 
-            if (gameState !== "GAMEOVER" || particles.length > 0) {
-                if (gameState !== "GAMEOVER") player.draw();
-            }
+            if (gameState !== "GAMEOVER") player.draw();
 
             requestAnimationFrame(animate);
         }
 
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space") {
-                e.preventDefault();
-                if (gameState === "PLAYING") player.flip();
-                else if (gameState === "START") startGame();
-                else if (gameState === "GAMEOVER" && screens.gameOver.classList.contains("active")) resetGame();
-            }
-        });
-        window.addEventListener("mousedown", (e) => {
-            if (gameState === "PLAYING" && e.target === canvas) player.flip();
-        });
+        // --- INPUT HANDLING ---
+        function pressInput() {
+            if (gameState === "PLAYING") {
+                isHoldingInput = true;
+                if (currentMode === "FLIP") player.action();
+            } else if (gameState === "START") startGame();
+            else if (gameState === "GAMEOVER" && screens.gameOver.classList.contains("active")) resetGame();
+        }
+        function releaseInput() { isHoldingInput = false; }
+
+        window.addEventListener("keydown", (e) => { if (e.code === "Space") { e.preventDefault(); pressInput(); }});
+        window.addEventListener("keyup", (e) => { if (e.code === "Space") releaseInput(); });
+        
+        window.addEventListener("mousedown", (e) => { if (e.target === canvas || gameState !== "PLAYING") pressInput(); });
+        window.addEventListener("mouseup", releaseInput);
 
         animate();
     </script>

@@ -3,442 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird: Custom Characters</title>
+    <title>My Awesome Game Hub</title>
     <style>
+        :root {
+            --bg-color: #0f0f13;
+            --card-bg: #1e1e24;
+            --accent: #7c3aed; /* Purple gamer accent */
+            --accent-hover: #8b5cf6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #1a1a2e;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
         }
-        #game-container {
-            position: relative;
-            width: 400px;
-            height: 500px;
+
+        /* Header / Navbar */
+        header {
+            background-color: var(--card-bg);
+            padding: 20px 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        canvas {
-            border: 4px solid #333;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            display: block;
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #a855f7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        
-        .screen {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+
+        /* Main Content Container */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            margin-bottom: 20px;
+            font-size: 24px;
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* Game Grid Layout */
+        .game-grid {
+            display: grid;
+            /* Auto-fit makes the grid responsive to screen size */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+        }
+
+        /* Individual Game Card */
+        .game-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.75);
-            border-radius: 10px;
+            border: 2px solid transparent;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            border-color: var(--accent);
+        }
+
+        .game-thumbnail {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background-color: #333;
+        }
+
+        .game-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .game-title {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+
+        .play-btn {
+            background-color: var(--accent);
             color: white;
-            display: none; 
-            transition: opacity 0.3s;
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.2s;
         }
-        .active { display: flex !important; }
-        
-        h1 { margin: 0 0 20px 0; font-size: 36px; text-shadow: 3px 3px 0 #000; color: #FFD700; }
-        h2 { margin: 0 0 10px 0; }
-        
-        button {
-            background-color: #73BF2E; color: white;
-            border: 3px solid #558A22; padding: 10px 20px;
-            font-size: 18px; font-weight: bold;
-            border-radius: 8px; cursor: pointer;
-            margin: 10px; transition: transform 0.1s, background-color 0.2s;
-        }
-        button:hover { background-color: #85d636; transform: scale(1.05); }
-        button:active { transform: scale(0.95); }
-        .btn-shop { background-color: #4CB1F7; border-color: #2b8ac9; }
-        .btn-shop:hover { background-color: #6bc0fa; }
 
-        #shop-items { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .shop-card { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 2px solid transparent; }
-        .shop-card.equipped { border-color: #FFD700; background: rgba(255, 215, 0, 0.2); }
-        .color-preview { width: 30px; height: 30px; border-radius: 8px; margin: 0 auto 10px auto; border: 2px solid white; }
-        .buy-btn { font-size: 14px; padding: 5px 10px; margin: 5px 0 0 0; }
-        .buy-btn:disabled { background: #555; border-color: #333; cursor: not-allowed; transform: none; }
-
-        #hud {
-            position: absolute; top: 15px; right: 15px;
-            color: white; font-weight: bold; font-size: 20px;
-            text-shadow: 2px 2px 0 #000; pointer-events: none; display: none;
+        .game-card:hover .play-btn {
+            background-color: var(--accent-hover);
         }
+
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <header>
+        <h1>🎮 My Arcade Hub</h1>
+        <div style="color: var(--text-muted); font-size: 14px;">Playing on GitHub Pages</div>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">Trending Games</h2>
         
-        <div id="hud">Coins: <span id="coin-count">0</span></div>
-
-        <div id="menu-screen" class="screen active">
-            <h1>Flappy Bird</h1>
-            <button onclick="startGame()">Play Game</button>
-            <button class="btn-shop" onclick="showShop()">Character Shop</button>
-        </div>
-
-        <div id="shop-screen" class="screen">
-            <h2>Shop</h2>
-            <p style="margin-top: 0;">Coins: <span id="shop-coins">0</span></p>
-            <div id="shop-items"></div>
-            <button onclick="showMenu()">Back</button>
-        </div>
-
-        <div id="game-over-screen" class="screen">
-            <h2 style="font-size: 32px; color: #ff4c4c; margin-bottom: 5px;">Game Over</h2>
-            <p style="font-size: 24px; margin: 5px;">Score: <span id="final-score">0</span></p>
-            <button onclick="resetGame()">Play Again (Q)</button>
-            <button class="btn-shop" onclick="showMenu()">Main Menu</button>
-        </div>
+        <div id="game-grid" class="game-grid">
+            </div>
     </div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-
-        let gameState = "MENU"; // MENU, PLAYING, GAMEOVER, SHOP
-        let frames = 0, score = 0, bgOffset = 0;
-        let baseSpeed = 2.5, gameSpeed = baseSpeed, pipeSpawnRate = 90;
-        let canRestart = false; // Prevents instant restart during death animation
-
-        // Animation Arrays
-        let coinParticles = [];
-        let coinText = { x: 0, y: 0, text: "", opacity: 0 };
-
-        // Save Data
-        let totalCoins = parseInt(localStorage.getItem("flappyCoins")) || 0;
-        let unlockedSkins = JSON.parse(localStorage.getItem("flappySkins")) || ["Classic"];
-        let equippedSkin = localStorage.getItem("flappyEquipped") || "Classic";
-
-        const skins = {
-            "Classic": { preview: "#FFD700", cost: 0 },
-            "Penguin": { preview: "#111111", cost: 10 },
-            "Alien":   { preview: "#32CD32", cost: 25 },
-            "Robot":   { preview: "#888888", cost: 50 }
-        };
-
-        const coinCountUI = document.getElementById("coin-count");
-        const shopCoinsUI = document.getElementById("shop-coins");
-
-        function updateCoinsUI() {
-            coinCountUI.innerText = totalCoins; shopCoinsUI.innerText = totalCoins;
-            localStorage.setItem("flappyCoins", totalCoins);
-            localStorage.setItem("flappySkins", JSON.stringify(unlockedSkins));
-            localStorage.setItem("flappyEquipped", equippedSkin);
-        }
-        updateCoinsUI();
-
-        const bird = {
-            x: 80, y: 250, radius: 14,
-            gravity: 0.6, jump: -7.5, velocity: 0, flapTimer: 0,
-            
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                let rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
-                ctx.rotate(rotation);
-
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = "#000";
-
-                if (equippedSkin === "Classic") {
-                    // Body
-                    ctx.fillStyle = "#FFD700"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                    // Eye
-                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -5, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(8, -5, 2, 0, Math.PI * 2); ctx.fill();
-                    // Beak
-                    ctx.fillStyle = "#FF8C00"; ctx.beginPath(); ctx.moveTo(10, 2); ctx.lineTo(24, 6); ctx.lineTo(10, 10); ctx.fill(); ctx.stroke();
-                    // Wing
-                    ctx.fillStyle = "#FFF"; ctx.beginPath();
-                    if (this.flapTimer > 0) { ctx.ellipse(-4, -6, 8, 5, Math.PI / 6, 0, Math.PI * 2); this.flapTimer--; } 
-                    else { ctx.ellipse(-4, 4, 8, 5, -Math.PI / 8, 0, Math.PI * 2); }
-                    ctx.fill(); ctx.stroke();
-
-                } else if (equippedSkin === "Penguin") {
-                    // Body
-                    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                    // Belly
-                    ctx.fillStyle = "#FFF"; ctx.beginPath(); ctx.arc(3, 2, this.radius - 4, 0, Math.PI * 2); ctx.fill();
-                    // Eye
-                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(6, -6, 4, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(7, -6, 1.5, 0, Math.PI * 2); ctx.fill();
-                    // Flat Beak
-                    ctx.fillStyle = "#FFA500"; ctx.fillRect(9, 0, 10, 4); ctx.strokeRect(9, 0, 10, 4);
-                    // Flipper Wing
-                    ctx.fillStyle = "#111"; ctx.beginPath();
-                    if (this.flapTimer > 0) { ctx.ellipse(-2, -2, 7, 3, -Math.PI / 4, 0, Math.PI * 2); this.flapTimer--; } 
-                    else { ctx.ellipse(-2, 4, 7, 3, Math.PI / 4, 0, Math.PI * 2); }
-                    ctx.fill(); ctx.stroke();
-
-                } else if (equippedSkin === "Alien") {
-                    // Body
-                    ctx.fillStyle = "#32CD32"; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                    // Antenna
-                    ctx.beginPath(); ctx.moveTo(0, -this.radius); ctx.lineTo(0, -this.radius - 8); ctx.stroke();
-                    ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(0, -this.radius - 8, 3, 0, Math.PI * 2); ctx.fill();
-                    // Cyclops Eye
-                    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(5, -3, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(7, -3, 2.5, 0, Math.PI * 2); ctx.fill();
-                    // UFO Thruster Wing
-                    ctx.fillStyle = "#A9A9A9"; ctx.beginPath();
-                    if (this.flapTimer > 0) { ctx.ellipse(-4, -5, 6, 4, 0, 0, Math.PI * 2); this.flapTimer--; } 
-                    else { ctx.ellipse(-4, 3, 6, 4, 0, 0, Math.PI * 2); }
-                    ctx.fill(); ctx.stroke();
-
-                } else if (equippedSkin === "Robot") {
-                    // Blocky Body
-                    ctx.fillStyle = "#888"; ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-                    ctx.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
-                    // Visor Eye
-                    ctx.fillStyle = "cyan"; ctx.fillRect(2, -8, 10, 5);
-                    // Vent Mouth
-                    ctx.fillStyle = "#444"; ctx.fillRect(6, 2, 8, 6);
-                    // Block Wing
-                    ctx.fillStyle = "#aaa"; 
-                    if (this.flapTimer > 0) { ctx.fillRect(-10, -10, 10, 6); ctx.strokeRect(-10, -10, 10, 6); this.flapTimer--; } 
-                    else { ctx.fillRect(-10, 2, 10, 6); ctx.strokeRect(-10, 2, 10, 6); }
-                }
-
-                ctx.restore();
+        // --- GAME DATABASE ---
+        // This is a list of all your games. To add a new game, just add a new block inside this list!
+        const gamesList = [
+            {
+                title: "Flappy Bird",
+                thumbnail: "https://placehold.co/400x250/FFD700/000?text=Flappy+Bird", // A placeholder image
+                url: "flappy.html" // Links to the file you renamed earlier
             },
-            update() {
-                this.velocity += this.gravity; this.y += this.velocity;
-                if (this.y + this.radius >= canvas.height - 40) { this.y = canvas.height - 40 - this.radius; endGame(); }
-                if (this.y - this.radius <= 0) { this.y = this.radius; this.velocity = 0; }
+            {
+                title: "Snake Game",
+                thumbnail: "https://placehold.co/400x250/32CD32/FFF?text=Snake",
+                url: "#" // Replace '#' with 'snake.html' when you make one
             },
-            flap() { this.velocity = this.jump; this.flapTimer = 10; }
-        };
-
-        let pipes = [];
-        const pipeWidth = 60; const pipeGap = 140;
-
-        function handlePipes() {
-            if (frames % pipeSpawnRate === 0) {
-                let topHeight = Math.random() * (canvas.height - pipeGap - 120) + 40;
-                pipes.push({ x: canvas.width, top: topHeight, bottom: topHeight + pipeGap, passed: false });
+            {
+                title: "Tetris Clone",
+                thumbnail: "https://placehold.co/400x250/3b82f6/FFF?text=Tetris",
+                url: "#"
+            },
+            {
+                title: "Space Invaders",
+                thumbnail: "https://placehold.co/400x250/111/FFF?text=Space+Invaders",
+                url: "#"
+            },
+            {
+                title: "Tic-Tac-Toe",
+                thumbnail: "https://placehold.co/400x250/ff4c4c/FFF?text=Tic-Tac-Toe",
+                url: "#"
+            },
+            {
+                title: "Memory Match",
+                thumbnail: "https://placehold.co/400x250/a855f7/FFF?text=Memory",
+                url: "#"
             }
+        ];
 
-            for (let i = 0; i < pipes.length; i++) {
-                let p = pipes[i]; p.x -= gameSpeed;
+        // --- RENDER GAMES TO SCREEN ---
+        const gridContainer = document.getElementById('game-grid');
 
-                ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
-                
-                // Draw Top
-                ctx.fillRect(p.x, 0, pipeWidth, p.top); ctx.strokeRect(p.x, 0, pipeWidth, p.top);
-                ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
-                
-                // Draw Bottom
-                let bHeight = canvas.height - p.bottom - 40;
-                ctx.fillRect(p.x, p.bottom, pipeWidth, bHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bHeight);
-                ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
+        gamesList.forEach(game => {
+            // Create the card element
+            const card = document.createElement('a');
+            card.href = game.url;
+            card.className = 'game-card';
 
-                // Collision
-                let bLeft = bird.x - bird.radius + 2, bRight = bird.x + bird.radius - 2;
-                let bTop = bird.y - bird.radius + 2, bBot = bird.y + bird.radius - 2;
-                if (bRight > p.x && bLeft < p.x + pipeWidth && (bTop < p.top || bBot > p.bottom)) endGame();
+            // Build the inside of the card using the database info
+            card.innerHTML = `
+                <img src="${game.thumbnail}" alt="${game.title}" class="game-thumbnail">
+                <div class="game-info">
+                    <h3 class="game-title">${game.title}</h3>
+                    <div class="play-btn">Play Now</div>
+                </div>
+            `;
 
-                // Score / Coins
-                if (p.x + pipeWidth < bird.x && !p.passed) {
-                    score++; totalCoins++; updateCoinsUI(); p.passed = true;
-                    gameSpeed = Math.min(baseSpeed + (score * 0.1), 5.5);
-                    pipeSpawnRate = Math.max(Math.floor(225 / gameSpeed), 40);
-                }
-            }
-            if (pipes.length > 0 && pipes[0].x < -pipeWidth - 10) pipes.shift();
-        }
-
-        function drawBackground() {
-            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, "#4CB1F7"); grad.addColorStop(1, "#A2E0FF");
-            ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-            for(let i = 0; i < 5; i++) {
-                let xPos = ((i * 150) - (bgOffset * 0.5)) % (canvas.width + 150);
-                if (xPos < -150) xPos += canvas.width + 150;
-                ctx.fillRect(xPos, canvas.height - 180, 80, 140);
-                ctx.fillRect(xPos + 40, canvas.height - 220, 60, 180);
-            }
-
-            if (gameState === "PLAYING") bgOffset += gameSpeed;
-            ctx.fillStyle = "#DED895"; ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
-            ctx.fillStyle = "#73BF2E"; ctx.fillRect(0, canvas.height - 40, canvas.width, 10);
-            
-            ctx.fillStyle = "#C6BD66";
-            for(let i = 0; i < 20; i++) {
-                let lineX = ((i * 30) - bgOffset) % canvas.width;
-                if (lineX < 0) lineX += canvas.width;
-                ctx.fillRect(lineX, canvas.height - 25, 10, 5);
-            }
-        }
-
-        function startGame() {
-            document.getElementById("menu-screen").classList.remove("active");
-            hud.style.display = "block";
-            resetGameVariables();
-        }
-
-        function resetGame() {
-            document.getElementById("game-over-screen").classList.remove("active");
-            hud.style.display = "block";
-            resetGameVariables();
-        }
-
-        function resetGameVariables() {
-            gameState = "PLAYING"; bird.y = 250; bird.velocity = 0; bird.flapTimer = 0;
-            pipes = []; score = 0; frames = 0; gameSpeed = baseSpeed; pipeSpawnRate = 90;
-            coinParticles = []; coinText.opacity = 0; canRestart = false;
-        }
-
-        function endGame() {
-            if (gameState === "GAMEOVER") return; // Prevent double trigger
-            gameState = "GAMEOVER";
-            document.getElementById("final-score").innerText = score;
-            
-            // Generate Coin Explosion Particles
-            let coinsToSpawn = Math.min(score, 40); // Cap visuals at 40 coins so it doesn't lag
-            for(let i = 0; i < coinsToSpawn; i++) {
-                coinParticles.push({
-                    x: bird.x, y: bird.y,
-                    vx: (Math.random() - 0.5) * 12,
-                    vy: (Math.random() * -12) - 4, // Shoot upwards
-                    gravity: 0.5,
-                    size: Math.random() * 3 + 5,
-                    rotation: Math.random() * Math.PI * 2,
-                    spinSpeed: (Math.random() - 0.5) * 0.3
-                });
-            }
-
-            if (score > 0) {
-                coinText = { x: bird.x, y: bird.y - 30, text: "+" + score + " Coins!", opacity: 1 };
-            }
-
-            // Delay showing the menu so the player sees the coins fly
-            setTimeout(() => {
-                document.getElementById("game-over-screen").classList.add("active");
-                hud.style.display = "none";
-                canRestart = true;
-            }, 1500); 
-        }
-
-        function showMenu() {
-            gameState = "MENU";
-            document.getElementById("shop-screen").classList.remove("active");
-            document.getElementById("game-over-screen").classList.remove("active");
-            document.getElementById("menu-screen").classList.add("active");
-            hud.style.display = "none";
-        }
-
-        function showShop() {
-            gameState = "SHOP";
-            document.getElementById("menu-screen").classList.remove("active");
-            document.getElementById("shop-screen").classList.add("active");
-            renderShop();
-        }
-
-        function renderShop() {
-            const container = document.getElementById("shop-items");
-            container.innerHTML = ""; 
-            
-            for (let name in skins) {
-                let skin = skins[name];
-                let isUnlocked = unlockedSkins.includes(name);
-                let isEquipped = equippedSkin === name;
-
-                let card = document.createElement("div");
-                card.className = "shop-card" + (isEquipped ? " equipped" : "");
-                
-                let btnHTML = isEquipped ? `<button class="buy-btn" disabled>Equipped</button>` :
-                              isUnlocked ? `<button class="buy-btn" onclick="equipSkin('${name}')">Equip</button>` :
-                              `<button class="buy-btn" ${totalCoins >= skin.cost ? '' : 'disabled'} onclick="buySkin('${name}', ${skin.cost})">Buy (${skin.cost})</button>`;
-
-                // Use border-radius for different shapes in shop preview
-                let shapeClass = name === "Classic" ? "border-radius: 50%;" :
-                                 name === "Penguin" ? "border-radius: 50% 50% 40% 40%;" :
-                                 name === "Alien"   ? "border-radius: 50%;" : "border-radius: 4px;";
-
-                card.innerHTML = `<div class="color-preview" style="background-color: ${skin.preview}; ${shapeClass}"></div>
-                                  <strong>${name}</strong><br>${btnHTML}`;
-                container.appendChild(card);
-            }
-        }
-
-        function buySkin(name, cost) {
-            if (totalCoins >= cost) { totalCoins -= cost; unlockedSkins.push(name); equippedSkin = name; updateCoinsUI(); renderShop(); }
-        }
-        function equipSkin(name) { equippedSkin = name; updateCoinsUI(); renderShop(); }
-
-        function animate() {
-            drawBackground();
-
-            if (gameState === "PLAYING") {
-                handlePipes(); bird.update();
-                // Draw score
-                ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; ctx.font = "bold 60px 'Segoe UI'";
-                ctx.textAlign = "center"; ctx.fillText(score, canvas.width / 2, 80); ctx.textAlign = "left";
-                frames++;
-            } else if (gameState === "GAMEOVER") {
-                // Draw static pipes
-                pipes.forEach(p => {
-                    ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#558A22"; ctx.lineWidth = 3;
-                    ctx.fillRect(p.x, 0, pipeWidth, p.top); ctx.strokeRect(p.x, 0, pipeWidth, p.top);
-                    ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
-                    let bHeight = canvas.height - p.bottom - 40;
-                    ctx.fillRect(p.x, p.bottom, pipeWidth, bHeight); ctx.strokeRect(p.x, p.bottom, pipeWidth, bHeight);
-                    ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20); ctx.strokeRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
-                });
-
-                // Animate Coins Exploding
-                coinParticles.forEach(c => {
-                    c.vy += c.gravity; c.x += c.vx; c.y += c.vy; c.rotation += c.spinSpeed;
-                    ctx.save();
-                    ctx.translate(c.x, c.y);
-                    ctx.scale(Math.abs(Math.sin(c.rotation)), 1); // 3D Spin effect
-                    ctx.fillStyle = "#FFD700"; ctx.strokeStyle = "#DAA520"; ctx.lineWidth = 1;
-                    ctx.beginPath(); ctx.arc(0, 0, c.size, 0, Math.PI * 2);
-                    ctx.fill(); ctx.stroke();
-                    ctx.restore();
-                });
-
-                // Floating Text Animation
-                if (coinText.opacity > 0) {
-                    coinText.y -= 1; coinText.opacity -= 0.015;
-                    ctx.fillStyle = `rgba(255, 215, 0, ${Math.max(0, coinText.opacity)})`;
-                    ctx.strokeStyle = `rgba(0, 0, 0, ${Math.max(0, coinText.opacity)})`;
-                    ctx.font = "bold 26px 'Segoe UI'"; ctx.lineWidth = 3; ctx.textAlign = "center";
-                    ctx.strokeText(coinText.text, coinText.x, coinText.y);
-                    ctx.fillText(coinText.text, coinText.x, coinText.y);
-                    ctx.textAlign = "left";
-                }
-            }
-            
-            bird.draw();
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space" || e.code === "ArrowUp") {
-                if (gameState === "PLAYING") bird.flap();
-                else if (gameState === "MENU") startGame();
-            }
-            // Only allow restart after the coin animation is finished
-            if ((e.key === "q" || e.key === "Q") && gameState === "GAMEOVER" && canRestart) resetGame();
+            // Add the card to the grid
+            gridContainer.appendChild(card);
         });
-        
-        window.addEventListener("mousedown", () => {
-            if (gameState === "PLAYING") bird.flap();
-        });
-
-        animate();
     </script>
+
 </body>
 </html>

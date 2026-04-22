@@ -3,196 +3,408 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Awesome Game Hub</title>
+    <title>Gravity Flip - Arcade Endless Runner</title>
     <style>
-        :root {
-            --bg-color: #0f0f13;
-            --card-bg: #1e1e24;
-            --accent: #7c3aed; /* Purple gamer accent */
-            --accent-hover: #8b5cf6;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* Header / Navbar */
-        header {
-            background-color: var(--card-bg);
-            padding: 20px 40px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 28px;
-            letter-spacing: 1px;
-            background: linear-gradient(90deg, #a855f7, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Main Content Container */
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .section-title {
-            margin-bottom: 20px;
-            font-size: 24px;
-            border-left: 4px solid var(--accent);
-            padding-left: 10px;
-        }
-
-        /* Game Grid Layout */
-        .game-grid {
-            display: grid;
-            /* Auto-fit makes the grid responsive to screen size */
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 25px;
-        }
-
-        /* Individual Game Card */
-        .game-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
+            height: 100vh;
+            background-color: #0b0c10; /* Dark arcade background */
+            font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
-            text-decoration: none;
-            color: var(--text-main);
-            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
+            border: 2px solid #45a29e;
+        }
+
+        canvas {
+            display: block;
+            background-color: #1f2833;
+        }
+
+        /* UI Overlays */
+        .ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
-            border: 2px solid transparent;
+            justify-content: center;
+            align-items: center;
+            background: rgba(11, 12, 16, 0.85);
+            color: #66fcf1;
+            display: none; /* Hidden by default */
         }
+        .active { display: flex !important; }
 
-        .game-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
-            border-color: var(--accent);
-        }
-
-        .game-thumbnail {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            background-color: #333;
-        }
-
-        .game-info {
-            padding: 15px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .game-title {
+        h1 {
+            font-size: 48px;
             margin: 0 0 10px 0;
-            font-size: 18px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #66fcf1;
         }
+        p { font-size: 18px; margin-bottom: 30px; color: #c5c6c7; }
 
-        .play-btn {
-            background-color: var(--accent);
-            color: white;
-            text-align: center;
-            padding: 8px;
-            border-radius: 6px;
+        .score-display {
+            position: absolute;
+            top: 15px; right: 20px;
+            color: #c5c6c7;
+            font-size: 24px;
             font-weight: bold;
-            transition: background-color 0.2s;
+            pointer-events: none;
+        }
+        .high-score {
+            position: absolute;
+            top: 15px; left: 20px;
+            color: #45a29e;
+            font-size: 20px;
+            pointer-events: none;
         }
 
-        .game-card:hover .play-btn {
-            background-color: var(--accent-hover);
+        button {
+            background: transparent;
+            color: #66fcf1;
+            border: 2px solid #66fcf1;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(102, 252, 241, 0.3);
         }
-
+        button:hover {
+            background: #66fcf1;
+            color: #0b0c10;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.8);
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🎮 My Arcade Hub</h1>
-        <div style="color: var(--text-muted); font-size: 14px;">Playing on GitHub Pages</div>
-    </header>
-
-    <div class="container">
-        <h2 class="section-title">Trending Games</h2>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
         
-        <div id="game-grid" class="game-grid">
-            </div>
+        <div class="high-score">Best: <span id="highScoreUI">0</span></div>
+        <div class="score-display"><span id="scoreUI">0</span></div>
+
+        <div id="start-screen" class="ui-layer active">
+            <h1>Gravity Flip</h1>
+            <p>Press SPACE or CLICK to flip gravity</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <div id="game-over-screen" class="ui-layer">
+            <h1 style="color: #ff0055; text-shadow: 0 0 10px #ff0055;">Crashed</h1>
+            <p>Score: <span id="finalScore">0</span></p>
+            <button onclick="resetGame()">Try Again (Space)</button>
+        </div>
     </div>
 
     <script>
-        // --- GAME DATABASE ---
-        // This is a list of all your games. To add a new game, just add a new block inside this list!
-        const gamesList = [
-            {
-                title: "Flappy Bird",
-                thumbnail: "https://placehold.co/400x250/FFD700/000?text=Flappy+Bird", // A placeholder image
-                url: "flappy.html" // Links to the file you renamed earlier
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // UI Elements
+        const startScreen = document.getElementById("start-screen");
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const scoreUI = document.getElementById("scoreUI");
+        const highScoreUI = document.getElementById("highScoreUI");
+        const finalScoreUI = document.getElementById("finalScore");
+
+        // Game State
+        let gameState = "START"; // START, PLAYING, GAMEOVER
+        let frames = 0;
+        let score = 0;
+        let highScore = localStorage.getItem("gravityHighScore") || 0;
+        highScoreUI.innerText = highScore;
+        
+        // Difficulty
+        let gameSpeed = 6;
+        let baseSpeed = 6;
+        let obstacleTimer = 0;
+
+        // Player Object
+        const player = {
+            x: 100,
+            y: 350, // Starts on bottom floor
+            size: 24,
+            vy: 0,
+            gravity: 1.2,
+            isFlipped: false,
+            color: "#66fcf1",
+            
+            update() {
+                // Apply gravity based on flip state
+                if (this.isFlipped) {
+                    this.vy -= this.gravity; 
+                } else {
+                    this.vy += this.gravity;
+                }
+                
+                this.y += this.vy;
+
+                // Floor collision (Bottom)
+                if (this.y + this.size > canvas.height - 20) {
+                    this.y = canvas.height - 20 - this.size;
+                    this.vy = 0;
+                }
+                // Ceiling collision (Top)
+                if (this.y < 20) {
+                    this.y = 20;
+                    this.vy = 0;
+                }
             },
-            {
-                title: "Snake Game",
-                thumbnail: "https://placehold.co/400x250/32CD32/FFF?text=Snake",
-                url: "#" // Replace '#' with 'snake.html' when you make one
+            
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.shadowBlur = 0; // Reset shadow so it doesn't affect everything else
             },
-            {
-                title: "Tetris Clone",
-                thumbnail: "https://placehold.co/400x250/3b82f6/FFF?text=Tetris",
-                url: "#"
-            },
-            {
-                title: "Space Invaders",
-                thumbnail: "https://placehold.co/400x250/111/FFF?text=Space+Invaders",
-                url: "#"
-            },
-            {
-                title: "Tic-Tac-Toe",
-                thumbnail: "https://placehold.co/400x250/ff4c4c/FFF?text=Tic-Tac-Toe",
-                url: "#"
-            },
-            {
-                title: "Memory Match",
-                thumbnail: "https://placehold.co/400x250/a855f7/FFF?text=Memory",
-                url: "#"
+
+            flip() {
+                this.isFlipped = !this.isFlipped;
+                // Add a tiny bit of vertical boost when flipping to make it feel punchy
+                this.vy = this.isFlipped ? -5 : 5;
+                
+                // Spawn flip particles
+                spawnParticles(this.x + this.size/2, this.y + this.size/2, 10, this.color);
             }
-        ];
+        };
 
-        // --- RENDER GAMES TO SCREEN ---
-        const gridContainer = document.getElementById('game-grid');
+        // Obstacles Array
+        let obstacles = [];
 
-        gamesList.forEach(game => {
-            // Create the card element
-            const card = document.createElement('a');
-            card.href = game.url;
-            card.className = 'game-card';
+        class Obstacle {
+            constructor() {
+                this.width = 30 + Math.random() * 40; // Random width
+                this.height = 40 + Math.random() * 60; // Random height
+                this.x = canvas.width;
+                
+                // 50% chance to spawn on top or bottom
+                this.isTop = Math.random() > 0.5;
+                this.y = this.isTop ? 20 : canvas.height - 20 - this.height;
+                this.color = "#ff0055";
+                this.passed = false;
+            }
 
-            // Build the inside of the card using the database info
-            card.innerHTML = `
-                <img src="${game.thumbnail}" alt="${game.title}" class="game-thumbnail">
-                <div class="game-info">
-                    <h3 class="game-title">${game.title}</h3>
-                    <div class="play-btn">Play Now</div>
-                </div>
-            `;
+            update() {
+                this.x -= gameSpeed;
+            }
 
-            // Add the card to the grid
-            gridContainer.appendChild(card);
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Draw neon border
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Particle System for visual flair
+        let particles = [];
+
+        function spawnParticles(x, y, amount, color) {
+            for (let i = 0; i < amount; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: 1,
+                    color: color
+                });
+            }
+        }
+
+        function handleParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05; // Fade out
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, 4, 4);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        // --- GAMEPLAY LOOP ---
+
+        function startGame() {
+            startScreen.classList.remove("active");
+            resetGameVariables();
+        }
+
+        function resetGame() {
+            gameOverScreen.classList.remove("active");
+            resetGameVariables();
+        }
+
+        function resetGameVariables() {
+            gameState = "PLAYING";
+            player.y = 350;
+            player.vy = 0;
+            player.isFlipped = false;
+            obstacles = [];
+            particles = [];
+            score = 0;
+            frames = 0;
+            gameSpeed = baseSpeed;
+            obstacleTimer = 0;
+            scoreUI.innerText = score;
+        }
+
+        function gameOver() {
+            gameState = "GAMEOVER";
+            spawnParticles(player.x + player.size/2, player.y + player.size/2, 40, "#ff0055");
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("gravityHighScore", highScore);
+                highScoreUI.innerText = highScore;
+            }
+            
+            finalScoreUI.innerText = score;
+            
+            // Short delay before showing menu
+            setTimeout(() => {
+                gameOverScreen.classList.add("active");
+            }, 800);
+        }
+
+        function drawEnvironment() {
+            // Background lines (parallax effect)
+            ctx.fillStyle = "rgba(69, 162, 158, 0.1)";
+            for (let i = 0; i < 10; i++) {
+                let lineX = ((i * 100) - (frames * (gameSpeed * 0.5))) % 900;
+                if (lineX < -100) lineX += 900;
+                ctx.fillRect(lineX, 0, 2, canvas.height);
+            }
+
+            // Top and Bottom Neon Floors
+            ctx.fillStyle = "#0b0c10";
+            ctx.fillRect(0, 0, canvas.width, 20); // Top
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20); // Bottom
+
+            ctx.fillStyle = "#45a29e";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#45a29e";
+            ctx.fillRect(0, 18, canvas.width, 2); // Top border
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 2); // Bottom border
+            ctx.shadowBlur = 0;
+        }
+
+        function animate() {
+            // Clear canvas with slight trail effect
+            ctx.fillStyle = "#1f2833";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawEnvironment();
+            handleParticles();
+
+            if (gameState === "PLAYING") {
+                player.update();
+                
+                // Add a small particle trail to the player
+                if (frames % 3 === 0) {
+                    spawnParticles(player.x, player.y + (player.isFlipped ? 0 : player.size), 1, player.color);
+                }
+
+                // Handle Obstacles
+                obstacleTimer--;
+                if (obstacleTimer <= 0) {
+                    obstacles.push(new Obstacle());
+                    // Spawn rate gets faster as game speed increases
+                    obstacleTimer = Math.max(40, 90 - (gameSpeed * 2)); 
+                }
+
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    let obs = obstacles[i];
+                    obs.update();
+                    obs.draw();
+
+                    // Collision Detection (AABB)
+                    if (player.x < obs.x + obs.width &&
+                        player.x + player.size > obs.x &&
+                        player.y < obs.y + obs.height &&
+                        player.y + player.size > obs.y) {
+                        gameOver();
+                    }
+
+                    // Score Tracking
+                    if (obs.x + obs.width < player.x && !obs.passed) {
+                        score += 10;
+                        scoreUI.innerText = score;
+                        obs.passed = true;
+                        
+                        // Increase difficulty
+                        gameSpeed += 0.05; 
+                    }
+
+                    // Remove off-screen obstacles
+                    if (obs.x + obs.width < 0) {
+                        obstacles.splice(i, 1);
+                    }
+                }
+
+                frames++;
+            } else if (gameState === "GAMEOVER") {
+                // Keep drawing static obstacles
+                obstacles.forEach(obs => obs.draw());
+            }
+
+            if (gameState !== "GAMEOVER" || particles.length > 0) {
+                if (gameState !== "GAMEOVER") player.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- INPUT HANDLING ---
+        function handleAction() {
+            if (gameState === "PLAYING") {
+                player.flip();
+            } else if (gameState === "START") {
+                startGame();
+            } else if (gameState === "GAMEOVER" && gameOverScreen.classList.contains("active")) {
+                resetGame();
+            }
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                e.preventDefault(); // Stop page from scrolling down
+                handleAction();
+            }
         });
-    </script>
 
+        window.addEventListener("mousedown", handleAction);
+
+        // Start Loop
+        animate();
+    </script>
 </body>
 </html>

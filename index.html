@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Fixed & Polished</title>
+    <title>Gravity Dash: Tuned Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -144,9 +144,13 @@
         let gameState = "MENU"; let frames = 0, score = 0, runCoins = 0, gameSpeed = 6, baseSpeed = 6;
         let obstacleTimer = 0, coinTimer = 0, powerupTimer = 0;
         let currentMode = "FLIP", portalActive = false, finishSpawned = false, isHoldingInput = false;
-        let levelPortalSpawned = false, nextEndlessPortalScore = 500; // Portal Glitch Fix
+        let levelPortalSpawned = false, nextEndlessPortalScore = 500;
         let screenShake = 0, screenFlash = 0;
         let shieldActive = false, magnetTimer = 0, slowMoTimer = 0;
+        
+        // Stomper Tracking Variables
+        let levelStompers = 0; 
+        let stomperCooldown = 0;
 
         const player = {
             x: 100, y: 350, size: 24, vy: 0, gravity: 1.6, isFlipped: false,
@@ -163,31 +167,30 @@
                 if (currentMode === "FLIP") { 
                     ctx.fillRect(this.x, this.y, this.size, this.size); 
                     
-                    // Cute Smiley Face For Cube
+                    // Smiley Face (Looking Forward/Right)
                     ctx.fillStyle = "#000"; 
                     let eyeY = this.isFlipped ? this.y + 16 : this.y + 6;
-                    ctx.fillRect(this.x + 6, eyeY, 4, 4); // Left eye
-                    ctx.fillRect(this.x + 14, eyeY, 4, 4); // Right eye
+                    ctx.fillRect(this.x + 14, eyeY, 3, 4); // Left eye
+                    ctx.fillRect(this.x + 20, eyeY, 3, 4); // Right eye
                     
                     ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
                     let smileY = this.isFlipped ? this.y + 10 : this.y + 14;
-                    ctx.arc(this.x + 12, smileY, 5, this.isFlipped ? Math.PI : 0, this.isFlipped ? Math.PI*2 : Math.PI);
+                    ctx.arc(this.x + 17, smileY, 4, this.isFlipped ? Math.PI : 0, this.isFlipped ? Math.PI*2 : Math.PI);
                     ctx.stroke();
                 } 
                 else { 
                     // Ship Shape
                     ctx.beginPath(); ctx.moveTo(this.x + this.size + 4, this.y + this.size / 2); ctx.lineTo(this.x, this.y - 4); ctx.lineTo(this.x + 8, this.y + this.size / 2); ctx.lineTo(this.x, this.y + this.size + 4); ctx.fill(); 
                     
-                    // Cute Smiley Face For Ship
+                    // Smiley Face for Ship (Looking Forward/Right)
                     ctx.fillStyle = "#000"; 
-                    ctx.fillRect(this.x + 8, this.y + 8, 3, 3);
-                    ctx.fillRect(this.x + 16, this.y + 8, 3, 3);
+                    ctx.fillRect(this.x + 14, this.y + 8, 3, 3);
+                    ctx.fillRect(this.x + 20, this.y + 8, 3, 3);
                     ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
-                    ctx.arc(this.x + 13, this.y + 14, 4, 0, Math.PI);
+                    ctx.arc(this.x + 17, this.y + 14, 3, 0, Math.PI);
                     ctx.stroke();
                 }
                 
-                // Draw Shield Forcefield
                 if (shieldActive) {
                     ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 2; ctx.beginPath();
                     ctx.arc(this.x + this.size/2, this.y + this.size/2, this.size + 5 + Math.sin(frames*0.2)*3, 0, Math.PI*2); ctx.stroke();
@@ -245,7 +248,6 @@
             }
             update() {
                 super.update();
-                // Stomper Drop Logic
                 if (this.style === "stomper" && player.x > this.x - 120 && player.x < this.x + 100 && this.y < canvas.height - 24 - this.height - 10) {
                     this.y += 12; // Slam Down
                     if (!this.isStomping) { spawnParticles(this.x+20, this.y+this.height, 5, "#fff"); this.isStomping=true; }
@@ -254,42 +256,22 @@
             draw() {
                 let spikeH = 10; 
                 
-                // NEW UNIQUE LOOK FOR THE STOMPER TRAP
                 if (this.style === "stomper") {
-                    ctx.fillStyle = "#666"; // Metallic grey body
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
-                    
-                    // Yellow Hazard Stripes
-                    ctx.fillStyle = "#F6D305";
-                    ctx.fillRect(this.x, this.y + 15, this.width, 20);
+                    ctx.fillStyle = "#666"; ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = "#F6D305"; ctx.fillRect(this.x, this.y + 15, this.width, 20);
                     ctx.fillStyle = "#000";
-                    for(let i=0; i<this.width; i+=10) {
-                        ctx.beginPath(); ctx.moveTo(this.x+i, this.y+15); ctx.lineTo(this.x+i+5, this.y+35); ctx.lineTo(this.x+i+10, this.y+35); ctx.lineTo(this.x+i+5, this.y+15); ctx.fill();
-                    }
-                    
-                    // Silver Spikes on bottom
-                    ctx.fillStyle = "#ccc";
-                    ctx.beginPath();
+                    for(let i=0; i<this.width; i+=10) { ctx.beginPath(); ctx.moveTo(this.x+i, this.y+15); ctx.lineTo(this.x+i+5, this.y+35); ctx.lineTo(this.x+i+10, this.y+35); ctx.lineTo(this.x+i+5, this.y+15); ctx.fill(); }
+                    ctx.fillStyle = "#ccc"; ctx.beginPath();
                     let spikeY = this.y + this.height;
-                    for(let i=0; i<this.width; i+=10) {
-                        ctx.moveTo(this.x+i, spikeY); ctx.lineTo(this.x+i+5, spikeY+spikeH); ctx.lineTo(this.x+i+10, spikeY);
-                    }
-                    ctx.fill();
-
-                    // Adjust hitbox height for spikes
+                    for(let i=0; i<this.width; i+=10) { ctx.moveTo(this.x+i, spikeY); ctx.lineTo(this.x+i+5, spikeY+spikeH); ctx.lineTo(this.x+i+10, spikeY); } ctx.fill();
                     this.height = 70 + spikeH; 
                 } 
                 else {
-                    // Standard Red Obstacles
                     let bodyY = this.isTop ? this.y : this.y+spikeH; let bodyH = this.height-spikeH;
                     ctx.fillStyle="#E52521"; ctx.fillRect(this.x, bodyY, this.width, bodyH); ctx.fillStyle="#821111"; ctx.fillRect(this.x+4, bodyY+4, this.width-8, bodyH-8);
-                    
-                    // Spikes
                     ctx.fillStyle="#E52521"; ctx.beginPath();
                     let spikeY = this.isTop ? this.y+this.height-spikeH : this.y+spikeH;
                     for(let i=0; i<this.width; i+=10) { ctx.moveTo(this.x+i, spikeY); ctx.lineTo(this.x+i+5, this.isTop?spikeY+spikeH:spikeY-spikeH); ctx.lineTo(this.x+i+10, spikeY); } ctx.fill();
-                    
-                    // Creepy Eye
                     if (this.height > 40) {
                         let eY = this.isTop ? this.y+this.height-25 : this.y+25; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(this.x+20, eY, 10, 0, Math.PI*2); ctx.fill();
                         let ang = Math.atan2((player.y+12)-eY, (player.x+12)-(this.x+20));
@@ -301,14 +283,34 @@
 
         function spawnObstacles() {
             let t = activeLevelData.obsType;
-            if (t === "all") t = ["standard", "gates", "stomper"][Math.floor(Math.random()*3)];
-            else if (t === "mixed") t = currentMode === "FLIP" ? ["standard", "stomper"][Math.floor(Math.random()*2)] : "gates";
-            else if (t === "jump_stomp") t = ["standard", "stomper"][Math.floor(Math.random()*2)];
-            else if (t === "gates_stomp") t = ["gates", "stomper"][Math.floor(Math.random()*2)];
+            let possibleTypes = [];
 
-            if (t === "standard") entities.push(new Obstacle("standard"));
-            else if (t === "stomper") entities.push(new Obstacle("stomper"));
-            else if (t === "gates") {
+            // Determine what CAN spawn based on the level rules
+            if (t === "all") possibleTypes = ["standard", "gates", "stomper"];
+            else if (t === "mixed") possibleTypes = currentMode === "FLIP" ? ["standard", "stomper"] : ["gates"];
+            else if (t === "jump_stomp") possibleTypes = ["standard", "stomper"];
+            else if (t === "gates_stomp") possibleTypes = ["gates", "stomper"];
+            else possibleTypes = [t];
+
+            let chosen = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
+
+            // Apply Stomper Rules (Cooldown & Hard Cap for Level 1)
+            if (chosen === "stomper") {
+                if (stomperCooldown > 0 || (activeLevelData.id === 1 && levelStompers >= 2)) {
+                    chosen = possibleTypes[0]; // Demote to a standard block or gate
+                    stomperCooldown--;
+                } else {
+                    stomperCooldown = 2; // Set cooldown (at least 2 regular obstacles must spawn before another stomper)
+                    if (activeLevelData.id === 1) levelStompers++; // Increase level 1 count
+                }
+            } else {
+                if (stomperCooldown > 0) stomperCooldown--;
+            }
+
+            // Spawn the finalized choice
+            if (chosen === "standard") entities.push(new Obstacle("standard"));
+            else if (chosen === "stomper") entities.push(new Obstacle("stomper"));
+            else if (chosen === "gates") {
                 let center = 120 + Math.random()*160; let gs = activeLevelData.gapSize; 
                 entities.push(new Obstacle("top", null, center-(gs/2)-24)); entities.push(new Obstacle("bottom", center+(gs/2), canvas.height-24-(center+(gs/2))));
             }
@@ -345,7 +347,6 @@
             initAudio(); activeLevelData = levelsData.find(l => l.id === id); hideScreens();
             gameState = "PLAYING"; player.y = 350; player.vy = 0; player.isFlipped = false; currentMode = activeLevelData.startMode;
             
-            // RESET ALL TRIGGERS PROPERLY
             portalActive = false; finishSpawned = false; isHoldingInput = false; 
             levelPortalSpawned = false; nextEndlessPortalScore = 500;
             entities = []; particles = [];
@@ -353,6 +354,10 @@
             score = 0; runCoins = 0; frames = 0; baseSpeed = activeLevelData.speed; gameSpeed = baseSpeed; 
             obstacleTimer = 40; coinTimer = 60; powerupTimer = 300;
             shieldActive = false; magnetTimer = 0; slowMoTimer = 0;
+            
+            // Reset Stomper trackers per run
+            levelStompers = 0;
+            stomperCooldown = 0;
             
             gameContainer.style.backgroundColor = currentMode === "FLY" ? "#240b36" : "#111"; 
             levelNameUI.innerText = activeLevelData.title; 
@@ -409,23 +414,19 @@
                     obstacleTimer--; coinTimer--; powerupTimer--;
 
                     if (activeLevelData.id === 4) {
-                        // BALANCED ENDLESS MODE
                         score += 0.1; scoreUI.innerText = "SCORE: " + Math.floor(score); progressFill.style.width = "100%";
-                        baseSpeed = 6.5 + (score / 1500); if(baseSpeed > 9.5) baseSpeed = 9.5; // Smoother scale, capped speed
-                        
+                        baseSpeed = 6.5 + (score / 1500); if(baseSpeed > 9.5) baseSpeed = 9.5; 
                         if (score >= nextEndlessPortalScore) {
                             entities.push(new Portal()); portalActive = true; obstacleTimer = 100;
-                            nextEndlessPortalScore += 500; // Only spawn one portal every 500 points
+                            nextEndlessPortalScore += 500;
                         }
                     } else {
-                        // NORMAL LEVELS WITH FIXED PORTAL SPAWN
                         if (score >= activeLevelData.winScore && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; } 
                         else if (activeLevelData.portalScore && score >= activeLevelData.portalScore && !levelPortalSpawned && !finishSpawned) { 
                             entities.push(new Portal()); levelPortalSpawned = true; portalActive = true; obstacleTimer = 100; 
                         }
                     }
 
-                    // Dynamically scale space between obstacles so you never get trapped
                     let minGap = Math.max(45, 90 - (gameSpeed*2));
                     if (obstacleTimer <= 0 && !finishSpawned && !portalActive) { spawnObstacles(); obstacleTimer = minGap; }
                     

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Audio Update</title>
+    <title>Gravity Dash: Spikes & Eyes</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
@@ -156,12 +156,10 @@
         const levelNameUI = document.getElementById("level-name-ui"), progressFill = document.getElementById("progress-fill");
         const coinUI = document.getElementById("coinUI"), shopCoinUI = document.getElementById("shopCoinUI");
 
-        // --- AUDIO SYSTEM (Web Audio API Synthesizer) ---
+        // --- AUDIO SYSTEM ---
         let audioCtx;
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
@@ -180,11 +178,7 @@
             coin: () => { playTone(800, 'square', 0.05, 0.05); setTimeout(() => playTone(1200, 'square', 0.1, 0.05), 50); },
             crash: () => playTone(100, 'sawtooth', 0.3, 0.2),
             portal: () => playTone(600, 'sine', 0.4, 0.1),
-            win: () => { 
-                playTone(400, 'square', 0.1, 0.05); 
-                setTimeout(() => playTone(500, 'square', 0.1, 0.05), 100); 
-                setTimeout(() => playTone(600, 'square', 0.3, 0.05), 200); 
-            }
+            win: () => { playTone(400, 'square', 0.1, 0.05); setTimeout(() => playTone(500, 'square', 0.1, 0.05), 100); setTimeout(() => playTone(600, 'square', 0.3, 0.05), 200); }
         };
 
         // --- SAVE DATA ---
@@ -206,11 +200,11 @@
             coinUI.innerText = totalCoins;
         }
 
-        // --- LEVEL DATA (Added specific gap sizes for flying) ---
+        // --- LEVEL DATA ---
         const levelsData = [
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", portalScore: null, obsType: "standard", gapSize: 0 },
-            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", portalScore: 180, obsType: "mixed", gapSize: 175 }, // EASIER FLYING
-            { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", portalScore: null, obsType: "gates", gapSize: 135 } // HARD FLYING
+            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", portalScore: 180, obsType: "mixed", gapSize: 175 },
+            { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", portalScore: null, obsType: "gates", gapSize: 135 }
         ];
 
         let activeLevelData = null;
@@ -254,7 +248,7 @@
                 if (currentMode === "FLIP") {
                     this.isFlipped = !this.isFlipped; this.vy = this.isFlipped ? -6 : 6;
                     spawnParticles(this.x + this.size/2, this.y + this.size/2, 6, skinsData[equippedSkin].color);
-                    sfx.jump(); // Play sound
+                    sfx.jump();
                 }
             }
         };
@@ -299,15 +293,69 @@
         class Obstacle {
             constructor(style, customY = null, customHeight = null) {
                 this.type = "obs"; this.width = 40; this.x = canvas.width; this.passed = false;
+                this.style = style;
                 if (style === "standard") {
-                    this.height = 40 + Math.random() * 100; this.y = Math.random() > 0.5 ? 24 : canvas.height - 24 - this.height;
-                } else if (style === "top") { this.height = customHeight; this.y = 24; } 
-                else if (style === "bottom") { this.height = customHeight; this.y = customY; this.passed = true; }
+                    this.height = 40 + Math.random() * 100;
+                    this.isTop = Math.random() > 0.5;
+                    this.y = this.isTop ? 24 : canvas.height - 24 - this.height;
+                } else if (style === "top") { 
+                    this.height = customHeight; this.y = 24; this.isTop = true;
+                } else if (style === "bottom") { 
+                    this.height = customHeight; this.y = customY; this.passed = true; this.isTop = false;
+                }
             }
+            
             update() { this.x -= gameSpeed; }
+            
             draw() {
-                ctx.fillStyle = "#E52521"; ctx.fillRect(this.x, this.y, this.width, this.height);
-                ctx.fillStyle = "#821111"; ctx.fillRect(this.x + 4, this.y + 4, this.width - 8, this.height - 8);
+                let spikeH = 10;
+                let bodyY = this.isTop ? this.y : this.y + spikeH;
+                let bodyH = this.height - spikeH;
+                
+                // Draw the main block
+                ctx.fillStyle = "#E52521";
+                ctx.fillRect(this.x, bodyY, this.width, bodyH);
+                ctx.fillStyle = "#821111"; 
+                ctx.fillRect(this.x + 4, bodyY + 4, this.width - 8, bodyH - 8);
+
+                // Draw Spikes
+                ctx.fillStyle = "#E52521";
+                ctx.beginPath();
+                if (this.isTop) {
+                    let spikeY = this.y + this.height - spikeH;
+                    for(let i = 0; i < this.width; i += 10) {
+                        ctx.moveTo(this.x + i, spikeY);
+                        ctx.lineTo(this.x + i + 5, spikeY + spikeH);
+                        ctx.lineTo(this.x + i + 10, spikeY);
+                    }
+                } else {
+                    let spikeY = this.y + spikeH;
+                    for(let i = 0; i < this.width; i += 10) {
+                        ctx.moveTo(this.x + i, spikeY);
+                        ctx.lineTo(this.x + i + 5, spikeY - spikeH);
+                        ctx.lineTo(this.x + i + 10, spikeY);
+                    }
+                }
+                ctx.fill();
+
+                // Creepy Eye that tracks the player
+                if (this.height > 40) {
+                    let eyeX = this.x + this.width / 2;
+                    let eyeY = this.isTop ? this.y + this.height - 25 : this.y + 25;
+                    
+                    // Sclera (White part)
+                    ctx.fillStyle = "#fff";
+                    ctx.beginPath(); ctx.arc(eyeX, eyeY, 10, 0, Math.PI * 2); ctx.fill();
+
+                    // Pupil Tracking Math
+                    let angle = Math.atan2((player.y + player.size/2) - eyeY, (player.x + player.size/2) - eyeX);
+                    let pX = eyeX + Math.cos(angle) * 5;
+                    let pY = eyeY + Math.sin(angle) * 5;
+
+                    // Pupil (Black part)
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath(); ctx.arc(pX, pY, 4, 0, Math.PI * 2); ctx.fill();
+                }
             }
         }
 
@@ -319,7 +367,7 @@
                 entities.push(new Obstacle("standard"));
             } else if (type === "gates") {
                 let gapCenter = 120 + Math.random() * 160;
-                let gapSize = activeLevelData.gapSize; // Pull dynamically from level data
+                let gapSize = activeLevelData.gapSize; 
                 let topHeight = gapCenter - (gapSize/2) - 24;
                 let bottomY = gapCenter + (gapSize/2);
                 let bottomHeight = canvas.height - 24 - bottomY;
@@ -378,8 +426,7 @@
         function retryLevel() { startLevel(activeLevelData.id); }
 
         function die() {
-            gameState = "GAMEOVER"; isHoldingInput = false;
-            sfx.crash(); // Play sound
+            gameState = "GAMEOVER"; isHoldingInput = false; sfx.crash();
             spawnParticles(player.x + player.size/2, player.y + player.size/2, 30, skinsData[equippedSkin].color);
             document.getElementById("finalProgress").innerText = Math.min(100, Math.floor((score / activeLevelData.winScore) * 100));
             document.getElementById("finalCoins").innerText = runCoins;
@@ -387,8 +434,7 @@
         }
 
         function winLevel() {
-            gameState = "WIN"; isHoldingInput = false;
-            sfx.win(); // Play sound
+            gameState = "WIN"; isHoldingInput = false; sfx.win();
             if (activeLevelData.id === unlockedLevelMax && unlockedLevelMax < levelsData.length) { unlockedLevelMax++; }
             totalCoins += runCoins + 20; updateSave(); setTimeout(() => screens.win.classList.add("active"), 1000);
         }
@@ -435,14 +481,12 @@
 
                     if (hitX && hitY && gameState === "PLAYING") {
                         if (ent.type === "portal") {
-                            sfx.portal(); // Play sound
-                            currentMode = "FLY"; player.vy = 0; gameContainer.style.backgroundColor = "#240b36";
+                            sfx.portal(); currentMode = "FLY"; player.vy = 0; gameContainer.style.backgroundColor = "#240b36";
                             modeAlert.style.opacity = "1"; setTimeout(() => modeAlert.style.opacity = "0", 2000);
                             portalActive = false; obstacleTimer = 50; 
                         } else if (ent.type === "finish") winLevel();
                         else if (ent.type === "coin") { 
-                            sfx.coin(); // Play sound
-                            runCoins++; coinUI.innerText = totalCoins + runCoins; spawnParticles(ent.x, ent.y, 8, "#F6D305"); entities.splice(i, 1); continue; 
+                            sfx.coin(); runCoins++; coinUI.innerText = totalCoins + runCoins; spawnParticles(ent.x, ent.y, 8, "#F6D305"); entities.splice(i, 1); continue; 
                         } 
                         else if (ent.type === "obs") die();
                     }
@@ -459,10 +503,7 @@
             requestAnimationFrame(animate);
         }
 
-        function pressInput() { 
-            initAudio(); // Required to unlock audio in browsers
-            if (gameState === "PLAYING") { isHoldingInput = true; if (currentMode === "FLIP") player.action(); } 
-        }
+        function pressInput() { initAudio(); if (gameState === "PLAYING") { isHoldingInput = true; if (currentMode === "FLIP") player.action(); } }
         function releaseInput() { isHoldingInput = false; }
 
         window.addEventListener("keydown", (e) => { if (e.code === "Space") { e.preventDefault(); pressInput(); }}); window.addEventListener("keyup", (e) => { if (e.code === "Space") releaseInput(); });

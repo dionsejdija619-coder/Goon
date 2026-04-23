@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Scripted Tutorial Edition</title>
+    <title>Gravity Dash: Custom Skins</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -162,33 +162,91 @@
                 if (this.y < 24) { this.y = 24; this.vy = 0; }
             },
             draw() {
+                ctx.save();
+                
+                // Draw Vampire Cape behind player body
+                if (equippedSkin === "Vampire") {
+                    ctx.fillStyle = "#550000"; 
+                    ctx.beginPath();
+                    if (currentMode === "FLIP") {
+                        let capeY = this.isFlipped ? this.y - 8 : this.y + 8;
+                        ctx.moveTo(this.x + 8, this.y + (this.isFlipped ? this.size : 0)); 
+                        ctx.lineTo(this.x - 12, capeY);
+                        ctx.lineTo(this.x - 6, capeY + 16);
+                    } else {
+                        ctx.moveTo(this.x, this.y + 4);
+                        ctx.lineTo(this.x - 12, this.y - 8);
+                        ctx.lineTo(this.x - 8, this.y + 24);
+                    }
+                    ctx.fill();
+                }
+
                 ctx.fillStyle = skinsData[equippedSkin].color;
                 
                 if (currentMode === "FLIP") { 
                     ctx.fillRect(this.x, this.y, this.size, this.size); 
-                    ctx.fillStyle = "#000"; 
-                    let eyeY = this.isFlipped ? this.y + 16 : this.y + 6;
-                    ctx.fillRect(this.x + 14, eyeY, 3, 4); 
-                    ctx.fillRect(this.x + 20, eyeY, 3, 4); 
-                    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
-                    let smileY = this.isFlipped ? this.y + 10 : this.y + 14;
-                    ctx.arc(this.x + 17, smileY, 4, this.isFlipped ? Math.PI : 0, this.isFlipped ? Math.PI*2 : Math.PI);
-                    ctx.stroke();
+                    
+                    if (equippedSkin === "Classic" || equippedSkin === "Vampire") {
+                        ctx.fillStyle = "#000"; 
+                        let eyeY = this.isFlipped ? this.y + 16 : this.y + 6;
+                        ctx.fillRect(this.x + 14, eyeY, 3, 4); 
+                        ctx.fillRect(this.x + 20, eyeY, 3, 4); 
+                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
+                        let smileY = this.isFlipped ? this.y + 10 : this.y + 14;
+                        ctx.arc(this.x + 17, smileY, 4, this.isFlipped ? Math.PI : 0, this.isFlipped ? Math.PI*2 : Math.PI);
+                        ctx.stroke();
+                        
+                        if (equippedSkin === "Vampire") {
+                            ctx.fillStyle = "#fff";
+                            let fangY = this.isFlipped ? smileY - 2 : smileY + 2;
+                            let fD = this.isFlipped ? -4 : 4;
+                            ctx.beginPath(); ctx.moveTo(this.x+14, fangY); ctx.lineTo(this.x+15.5, fangY+fD); ctx.lineTo(this.x+17, fangY); ctx.fill();
+                            ctx.beginPath(); ctx.moveTo(this.x+17, fangY); ctx.lineTo(this.x+18.5, fangY+fD); ctx.lineTo(this.x+20, fangY); ctx.fill();
+                        }
+                    } else if (equippedSkin === "Gameboy") {
+                        let sy = this.y; if (this.isFlipped) sy += 1;
+                        ctx.fillStyle = "#9bbc0f"; ctx.fillRect(this.x + 3, sy + 3, 18, 9);
+                        ctx.fillStyle = "#000"; ctx.fillRect(this.x + 4, sy + 15, 6, 2); ctx.fillRect(this.x + 6, sy + 13, 2, 6);
+                        ctx.fillStyle = "#8b0000"; ctx.beginPath(); ctx.arc(this.x + 16, sy + 17, 1.5, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x + 20, sy + 15, 1.5, 0, Math.PI*2); ctx.fill();
+                    } else if (equippedSkin === "C-64") {
+                        let sy = this.y;
+                        ctx.fillStyle = "#555"; ctx.fillRect(this.x + 2, sy + 2, 20, 14);
+                        ctx.fillStyle = "#000"; ctx.fillRect(this.x + 4, sy + 4, 16, 10);
+                        if (frames % 20 < 10) { ctx.fillStyle = "#8B8BFF"; ctx.fillRect(this.x + 6, sy + 6, 4, 4); }
+                        ctx.fillStyle = "#444"; ctx.fillRect(this.x + 4, sy + 18, 16, 2); ctx.fillRect(this.x + 4, sy + 21, 16, 2);
+                    }
                 } 
                 else { 
+                    // Fly Mode Shapes
                     ctx.beginPath(); ctx.moveTo(this.x + this.size + 4, this.y + this.size / 2); ctx.lineTo(this.x, this.y - 4); ctx.lineTo(this.x + 8, this.y + this.size / 2); ctx.lineTo(this.x, this.y + this.size + 4); ctx.fill(); 
-                    ctx.fillStyle = "#000"; 
-                    ctx.fillRect(this.x + 14, this.y + 8, 3, 3);
-                    ctx.fillRect(this.x + 20, this.y + 8, 3, 3);
-                    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
-                    ctx.arc(this.x + 17, this.y + 14, 3, 0, Math.PI);
-                    ctx.stroke();
+                    
+                    if (equippedSkin === "Classic" || equippedSkin === "Vampire") {
+                        ctx.fillStyle = "#000"; 
+                        ctx.fillRect(this.x + 14, this.y + 8, 3, 3);
+                        ctx.fillRect(this.x + 20, this.y + 8, 3, 3);
+                        ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
+                        ctx.arc(this.x + 17, this.y + 14, 3, 0, Math.PI);
+                        ctx.stroke();
+                        
+                        if (equippedSkin === "Vampire") {
+                            ctx.fillStyle = "#fff";
+                            ctx.beginPath(); ctx.moveTo(this.x+15, this.y+15); ctx.lineTo(this.x+16, this.y+18); ctx.lineTo(this.x+17, this.y+15); ctx.fill();
+                        }
+                    } else if (equippedSkin === "Gameboy") {
+                        ctx.fillStyle = "#9bbc0f"; ctx.beginPath(); ctx.arc(this.x+12, this.y+this.size/2, 4, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = "#8b0000"; ctx.beginPath(); ctx.arc(this.x+20, this.y+this.size/2, 2, 0, Math.PI*2); ctx.fill();
+                    } else if (equippedSkin === "C-64") {
+                        ctx.fillStyle = "#555"; ctx.beginPath(); ctx.arc(this.x+14, this.y+this.size/2, 5, 0, Math.PI*2); ctx.fill();
+                        if (frames % 20 < 10) { ctx.fillStyle = "#8B8BFF"; ctx.fillRect(this.x+12, this.y+this.size/2-2, 4, 4); }
+                    }
                 }
                 
                 if (shieldActive) {
                     ctx.strokeStyle = "#00ffff"; ctx.lineWidth = 2; ctx.beginPath();
                     ctx.arc(this.x + this.size/2, this.y + this.size/2, this.size + 5 + Math.sin(frames*0.2)*3, 0, Math.PI*2); ctx.stroke();
                 }
+
+                ctx.restore();
             },
             action() { if (currentMode === "FLIP") { this.isFlipped = !this.isFlipped; this.vy = this.isFlipped ? -6 : 6; spawnParticles(this.x+12, this.y+12, 6, skinsData[equippedSkin].color); sfx.jump(); } }
         };
@@ -393,11 +451,9 @@
                 }
 
                 if (gameState === "PLAYING") {
-                    // --------- THE FIX: SCRIPTED TUTORIAL ---------
                     if (activeLevelData.id === 0) {
                         progressFill.style.width = Math.min(100, (frames / 1500) * 100) + "%";
 
-                        // Perfectly timed spawns matching the text!
                         if (frames === 350) entities.push(new Obstacle("bottom", canvas.height - 24 - 60, 60)); 
                         if (frames === 480) entities.push(new Obstacle("top", null, 60));
                         
@@ -416,7 +472,6 @@
                         if (frames === 1500 && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; }
                         
                     } else {
-                        // NORMAL RANDOM GAMEPLAY
                         obstacleTimer--; coinTimer--; powerupTimer--;
 
                         if (activeLevelData.id === 4) {
@@ -470,7 +525,6 @@
                     if (ent.x + ent.width < -50) entities.splice(i, 1);
                 }
 
-                // --------- SCRIPTED OVERLAY TEXT ---------
                 if (activeLevelData.id === 0 && gameState === "PLAYING") {
                     ctx.fillStyle = "#fff"; ctx.font = "12px 'Press Start 2P'"; ctx.textAlign = "center";
                     let arrowBounce = Math.sin(frames * 0.2) * 5;

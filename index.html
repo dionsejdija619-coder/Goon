@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Tutorial Edition</title>
+    <title>Gravity Dash: Scripted Tutorial Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -117,7 +117,7 @@
         };
 
         let totalCoins = parseInt(localStorage.getItem("gd_coins")) || 0;
-        let unlockedLevelMax = parseInt(localStorage.getItem("gd_levels")) || 0; // Starts at 0 now for Tutorial
+        let unlockedLevelMax = parseInt(localStorage.getItem("gd_levels")) || 0; 
         let survivalHighScore = parseInt(localStorage.getItem("gd_highscore")) || 0;
         let unlockedSkins = JSON.parse(localStorage.getItem("gd_skins")) || ["Classic"];
         let unlockedTrails = JSON.parse(localStorage.getItem("gd_trails")) || ["None"];
@@ -134,7 +134,7 @@
         }
 
         const levelsData = [
-            { id: 0, title: "TUTORIAL", speed: 4.5, winScore: 60, startMode: "FLIP", obsType: "standard", gapSize: 0 }, // New short tutorial!
+            { id: 0, title: "TUTORIAL", speed: 4.5, winScore: Infinity, startMode: "FLIP", obsType: "standard", gapSize: 0 }, 
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", obsType: "jump_stomp", gapSize: 0 },
             { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 185 },
             { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 145 },
@@ -312,7 +312,6 @@
             levelsData.forEach(lvl => {
                 let isUn = lvl.id <= unlockedLevelMax || lvl.id === 4;
                 let btn = document.createElement("button"); btn.className = `level-btn ${isUn?'':'locked'}`;
-                // Now shows LOCKED instead of the title if the player hasn't unlocked it!
                 btn.innerHTML = `<span>${isUn || lvl.id === 4 ? lvl.title : 'LOCKED'}</span>`;
                 if (isUn) btn.onclick = () => startLevel(lvl.id); grid.appendChild(btn);
             });
@@ -362,7 +361,6 @@
 
         function winLevel() {
             gameState = "WIN"; sfx.win();
-            // Up to ID 3 (since 4 is endless)
             if (activeLevelData.id === unlockedLevelMax && unlockedLevelMax < 3) unlockedLevelMax++;
             totalCoins += runCoins + 20; updateSave(); setTimeout(() => screens.win.classList.add("active"), 1000);
         }
@@ -395,23 +393,48 @@
                 }
 
                 if (gameState === "PLAYING") {
-                    obstacleTimer--; coinTimer--; powerupTimer--;
+                    // --------- THE FIX: SCRIPTED TUTORIAL ---------
+                    if (activeLevelData.id === 0) {
+                        progressFill.style.width = Math.min(100, (frames / 1500) * 100) + "%";
 
-                    if (activeLevelData.id === 4) {
-                        score += 0.1; scoreUI.innerText = "SCORE: " + Math.floor(score); progressFill.style.width = "100%";
-                        baseSpeed = 6.5 + (score / 1500); if(baseSpeed > 9.5) baseSpeed = 9.5; 
-                        if (score >= nextEndlessPortalScore) { entities.push(new Portal()); portalActive = true; obstacleTimer = 100; nextEndlessPortalScore += 500; }
-                    } else {
-                        if (score >= activeLevelData.winScore && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; } 
-                        else if (activeLevelData.portalScore && score >= activeLevelData.portalScore && !levelPortalSpawned && !finishSpawned) { 
-                            entities.push(new Portal()); levelPortalSpawned = true; portalActive = true; obstacleTimer = 100; 
+                        // Perfectly timed spawns matching the text!
+                        if (frames === 350) entities.push(new Obstacle("bottom", canvas.height - 24 - 60, 60)); 
+                        if (frames === 480) entities.push(new Obstacle("top", null, 60));
+                        
+                        if (frames === 650) { let c = new Coin(); c.y = 200; entities.push(c); }
+                        if (frames === 700) { let c = new Coin(); c.y = 200; entities.push(c); }
+                        if (frames === 780) { let p = new PowerUp(); p.powerType = "shield"; p.color = "#00ffff"; p.y = 200; entities.push(p); }
+                        
+                        if (frames === 950) entities.push(new Portal());
+                        
+                        if (frames === 1250) {
+                            let center = 200; let gs = 150; 
+                            entities.push(new Obstacle("top", null, center-(gs/2)-24)); 
+                            entities.push(new Obstacle("bottom", center+(gs/2), canvas.height-24-(center+(gs/2))));
                         }
-                    }
+                        
+                        if (frames === 1500 && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; }
+                        
+                    } else {
+                        // NORMAL RANDOM GAMEPLAY
+                        obstacleTimer--; coinTimer--; powerupTimer--;
 
-                    let minGap = Math.max(45, 90 - (gameSpeed*2));
-                    if (obstacleTimer <= 0 && !finishSpawned && !portalActive) { spawnObstacles(); obstacleTimer = minGap; }
-                    if (coinTimer <= 0 && !finishSpawned) { entities.push(new Coin()); coinTimer = 40 + Math.random()*60; }
-                    if (powerupTimer <= 0 && !finishSpawned) { entities.push(new PowerUp()); powerupTimer = 300 + Math.random()*300; }
+                        if (activeLevelData.id === 4) {
+                            score += 0.1; scoreUI.innerText = "SCORE: " + Math.floor(score); progressFill.style.width = "100%";
+                            baseSpeed = 6.5 + (score / 1500); if(baseSpeed > 9.5) baseSpeed = 9.5; 
+                            if (score >= nextEndlessPortalScore) { entities.push(new Portal()); portalActive = true; obstacleTimer = 100; nextEndlessPortalScore += 500; }
+                        } else {
+                            if (score >= activeLevelData.winScore && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; } 
+                            else if (activeLevelData.portalScore && score >= activeLevelData.portalScore && !levelPortalSpawned && !finishSpawned) { 
+                                entities.push(new Portal()); levelPortalSpawned = true; portalActive = true; obstacleTimer = 100; 
+                            }
+                        }
+
+                        let minGap = Math.max(45, 90 - (gameSpeed*2));
+                        if (obstacleTimer <= 0 && !finishSpawned && !portalActive) { spawnObstacles(); obstacleTimer = minGap; }
+                        if (coinTimer <= 0 && !finishSpawned) { entities.push(new Coin()); coinTimer = 40 + Math.random()*60; }
+                        if (powerupTimer <= 0 && !finishSpawned) { entities.push(new PowerUp()); powerupTimer = 300 + Math.random()*300; }
+                    }
                 }
 
                 for (let i = entities.length - 1; i >= 0; i--) {
@@ -438,13 +461,16 @@
                     }
 
                     if ((ent.type === "obs" || ent.type === "portal") && ent.x + ent.width < player.x && !ent.passed) {
-                        if (activeLevelData.id !== 4) score += 10;
-                        ent.passed = true; progressFill.style.width = Math.min(100, (score/activeLevelData.winScore)*100) + "%";
+                        if (activeLevelData.id !== 4 && activeLevelData.id !== 0) {
+                            score += 10;
+                            progressFill.style.width = Math.min(100, (score/activeLevelData.winScore)*100) + "%";
+                        }
+                        ent.passed = true; 
                     }
                     if (ent.x + ent.width < -50) entities.splice(i, 1);
                 }
 
-                // --------- NEW TUTORIAL OVERLAY LOGIC ---------
+                // --------- SCRIPTED OVERLAY TEXT ---------
                 if (activeLevelData.id === 0 && gameState === "PLAYING") {
                     ctx.fillStyle = "#fff"; ctx.font = "12px 'Press Start 2P'"; ctx.textAlign = "center";
                     let arrowBounce = Math.sin(frames * 0.2) * 5;
@@ -458,12 +484,15 @@
                         ctx.fillStyle = "#E52521"; ctx.fillText("AVOID THE RED SPIKES!", canvas.width/2, 100);
                     } else if (frames < 900) {
                         ctx.fillStyle = "#F6D305"; ctx.fillText("COLLECT COINS & POWERUPS", canvas.width/2, 100);
+                    } else if (frames < 1150) {
+                        ctx.fillStyle = "#00ffff"; ctx.fillText("ENTER THE PORTAL ->", canvas.width/2, 100);
+                    } else if (frames < 1450) {
+                        ctx.fillStyle = "#ff00ff"; ctx.fillText("HOLD TO FLY UP, RELEASE TO DROP", canvas.width/2, 100);
                     } else {
                         ctx.fillStyle = "#39ff14"; ctx.fillText("REACH THE FINISH LINE ->", canvas.width/2, 100);
                     }
-                    ctx.textAlign = "left"; // Reset align
+                    ctx.textAlign = "left"; 
                 }
-                // ----------------------------------------------
 
                 if (gameState === "PLAYING") frames++;
             } else if (gameState === "GAMEOVER") entities.forEach(e => e.draw());

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Balanced Edition</title>
+    <title>Gravity Dash: Portal Fixed Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -135,7 +135,7 @@
 
         const levelsData = [
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", obsType: "jump_stomp", gapSize: 0 },
-            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 185 }, // Changed to full FLY mode
+            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 185 }, // Starts in FLIP, transitions midway
             { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 145 },
             { id: 4, title: "4. ENDLESS SURVIVAL", speed: 6.5, winScore: Infinity, startMode: "FLIP", obsType: "all", gapSize: 180 } 
         ];
@@ -155,7 +155,7 @@
             x: 100, y: 350, size: 24, vy: 0, gravity: 1.6, isFlipped: false,
             update() {
                 if (currentMode === "FLIP") { this.vy += this.isFlipped ? -this.gravity : this.gravity; } 
-                else if (currentMode === "FLY") { this.vy += isHoldingInput ? -0.7 : 0.6; if(this.vy < -7) this.vy=-7; if(this.vy > 7) this.vy=7; } // Smoother flight
+                else if (currentMode === "FLY") { this.vy += isHoldingInput ? -0.7 : 0.6; if(this.vy < -7) this.vy=-7; if(this.vy > 7) this.vy=7; }
                 this.y += this.vy;
                 if (this.y + this.size > canvas.height - 24) { this.y = canvas.height - 24 - this.size; this.vy = 0; }
                 if (this.y < 24) { this.y = 24; this.vy = 0; }
@@ -236,8 +236,8 @@
                 super(canvas.width, 0, 40, 0, "obs"); this.passed = false; this.style = style;
                 if (style === "standard") { this.height = 40+Math.random()*100; this.isTop = Math.random()>0.5; this.y = this.isTop ? 24 : canvas.height-24-this.height; } 
                 else if (style === "stomper") { 
-                    this.height = 80; // 70 body + 10 spikes
-                    this.isTop = Math.random() > 0.5; // 50% chance to be on the floor now!
+                    this.height = 80; 
+                    this.isTop = Math.random() > 0.5; 
                     this.spikeH = 10;
                     this.y = this.isTop ? 24 : canvas.height - 24 - this.height; 
                     this.isStomping = false; 
@@ -247,7 +247,6 @@
             }
             update() {
                 super.update();
-                // Stomper trigger zone and movement logic
                 if (this.style === "stomper" && player.x > this.x - 120 && player.x < this.x + 100) {
                     if (this.isTop && this.y < canvas.height - 24 - this.height - 10) {
                         this.y += 12; // Slam down
@@ -263,7 +262,7 @@
                 
                 if (this.style === "stomper") {
                     let bodyY = this.isTop ? this.y : this.y + this.spikeH;
-                    let bodyH = this.height - this.spikeH; // 70
+                    let bodyH = this.height - this.spikeH; 
                     
                     ctx.fillStyle = "#666"; ctx.fillRect(this.x, bodyY, this.width, bodyH);
                     ctx.fillStyle = "#F6D305"; 
@@ -316,7 +315,7 @@
                     chosen = possibleTypes[0]; 
                     stomperCooldown--;
                 } else {
-                    stomperCooldown = 3; // INCREASED COOLDOWN: Less frequent stompers!
+                    stomperCooldown = 3; 
                     if (activeLevelData.id === 1) levelStompers++; 
                 }
             } else {

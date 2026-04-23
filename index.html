@@ -135,7 +135,7 @@
 
         const levelsData = [
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", obsType: "jump_stomp", gapSize: 0 },
-            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 185 }, // Starts in FLIP, transitions midway
+            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 185 },
             { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 145 },
             { id: 4, title: "4. ENDLESS SURVIVAL", speed: 6.5, winScore: Infinity, startMode: "FLIP", obsType: "all", gapSize: 180 } 
         ];
@@ -457,6 +457,7 @@
                             sfx.portal(); screenFlash = 0.6; currentMode = currentMode==="FLIP"?"FLY":"FLIP"; player.vy = 0; gameContainer.style.backgroundColor = currentMode==="FLY"?"#240b36":"#111";
                             modeAlert.innerText = "MODE SWAP!"; modeAlert.style.opacity = "1"; setTimeout(() => modeAlert.style.opacity = "0", 2000);
                             portalActive = false; obstacleTimer = 50; 
+                            entities.splice(i, 1); continue; 
                         } else if (ent.type === "finish") winLevel();
                         else if (ent.type === "coin") { sfx.coin(); runCoins++; coinUI.innerText = totalCoins + runCoins; spawnParticles(ent.x, ent.y, 8, "#F6D305"); entities.splice(i, 1); continue; } 
                         else if (ent.type === "powerup") { 

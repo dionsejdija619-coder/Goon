@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Magnet Fixed Edition</title>
+    <title>Gravity Dash: Tutorial Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -117,7 +117,7 @@
         };
 
         let totalCoins = parseInt(localStorage.getItem("gd_coins")) || 0;
-        let unlockedLevelMax = parseInt(localStorage.getItem("gd_levels")) || 1;
+        let unlockedLevelMax = parseInt(localStorage.getItem("gd_levels")) || 0; // Starts at 0 now for Tutorial
         let survivalHighScore = parseInt(localStorage.getItem("gd_highscore")) || 0;
         let unlockedSkins = JSON.parse(localStorage.getItem("gd_skins")) || ["Classic"];
         let unlockedTrails = JSON.parse(localStorage.getItem("gd_trails")) || ["None"];
@@ -134,6 +134,7 @@
         }
 
         const levelsData = [
+            { id: 0, title: "TUTORIAL", speed: 4.5, winScore: 60, startMode: "FLIP", obsType: "standard", gapSize: 0 }, // New short tutorial!
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", obsType: "jump_stomp", gapSize: 0 },
             { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 185 },
             { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 145 },
@@ -215,11 +216,7 @@
                     let dx = (player.x + player.size/2) - (this.x + this.width/2); 
                     let dy = (player.y + player.size/2) - (this.y + this.height/2);
                     let dist = Math.sqrt(dx*dx + dy*dy); 
-                    if (dist < 300) { 
-                        // Added +gameSpeed to perfectly cancel out the backwards screen scrolling!
-                        this.x += dx * 0.15 + gameSpeed; 
-                        this.y += dy * 0.15; 
-                    }
+                    if (dist < 300) { this.x += dx * 0.15 + gameSpeed; this.y += dy * 0.15; }
                 }
             }
             draw() { let off = Math.sin(this.pulse)*4; ctx.fillStyle="#F6D305"; ctx.fillRect(this.x,this.y+off,this.width,this.height); ctx.fillStyle="#fff"; ctx.fillRect(this.x+4,this.y+4+off,4,8); }
@@ -242,11 +239,8 @@
                 super(canvas.width, 0, 40, 0, "obs"); this.passed = false; this.style = style;
                 if (style === "standard") { this.height = 40+Math.random()*100; this.isTop = Math.random()>0.5; this.y = this.isTop ? 24 : canvas.height-24-this.height; } 
                 else if (style === "stomper") { 
-                    this.height = 80; 
-                    this.isTop = Math.random() > 0.5; 
-                    this.spikeH = 10;
-                    this.y = this.isTop ? 24 : canvas.height - 24 - this.height; 
-                    this.isStomping = false; 
+                    this.height = 80; this.isTop = Math.random() > 0.5; this.spikeH = 10;
+                    this.y = this.isTop ? 24 : canvas.height - 24 - this.height; this.isStomping = false; 
                 }
                 else if (style === "top") { this.height = customH; this.y = 24; this.isTop = true; } 
                 else if (style === "bottom") { this.height = customH; this.y = customY; this.passed = true; this.isTop = false; }
@@ -255,41 +249,24 @@
                 super.update();
                 if (this.style === "stomper" && player.x > this.x - 120 && player.x < this.x + 100) {
                     if (this.isTop && this.y < canvas.height - 24 - this.height - 10) {
-                        this.y += 12; // Slam down
-                        if (!this.isStomping) { spawnParticles(this.x+20, this.y+this.height, 5, "#fff"); this.isStomping=true; }
+                        this.y += 12; if (!this.isStomping) { spawnParticles(this.x+20, this.y+this.height, 5, "#fff"); this.isStomping=true; }
                     } else if (!this.isTop && this.y > 24 + 10) {
-                        this.y -= 12; // Slam UP
-                        if (!this.isStomping) { spawnParticles(this.x+20, this.y, 5, "#fff"); this.isStomping=true; }
+                        this.y -= 12; if (!this.isStomping) { spawnParticles(this.x+20, this.y, 5, "#fff"); this.isStomping=true; }
                     }
                 }
             }
             draw() {
                 let spikeH = 10; 
-                
                 if (this.style === "stomper") {
-                    let bodyY = this.isTop ? this.y : this.y + this.spikeH;
-                    let bodyH = this.height - this.spikeH; 
-                    
+                    let bodyY = this.isTop ? this.y : this.y + this.spikeH; let bodyH = this.height - this.spikeH; 
                     ctx.fillStyle = "#666"; ctx.fillRect(this.x, bodyY, this.width, bodyH);
-                    ctx.fillStyle = "#F6D305"; 
-                    let stripeY = this.isTop ? bodyY + 15 : bodyY + bodyH - 35;
-                    ctx.fillRect(this.x, stripeY, this.width, 20);
-                    
+                    ctx.fillStyle = "#F6D305"; let stripeY = this.isTop ? bodyY + 15 : bodyY + bodyH - 35; ctx.fillRect(this.x, stripeY, this.width, 20);
                     ctx.fillStyle = "#000";
-                    for(let i=0; i<this.width; i+=10) { 
-                        ctx.beginPath(); ctx.moveTo(this.x+i, stripeY); ctx.lineTo(this.x+i+5, stripeY+20); ctx.lineTo(this.x+i+10, stripeY+20); ctx.lineTo(this.x+i+5, stripeY); ctx.fill(); 
-                    }
-                    
+                    for(let i=0; i<this.width; i+=10) { ctx.beginPath(); ctx.moveTo(this.x+i, stripeY); ctx.lineTo(this.x+i+5, stripeY+20); ctx.lineTo(this.x+i+10, stripeY+20); ctx.lineTo(this.x+i+5, stripeY); ctx.fill(); }
                     ctx.fillStyle = "#ccc"; ctx.beginPath();
-                    let spikeBaseY = this.isTop ? bodyY + bodyH : bodyY;
-                    let spikeTipY = this.isTop ? spikeBaseY + this.spikeH : spikeBaseY - this.spikeH;
-                    
-                    for(let i=0; i<this.width; i+=10) { 
-                        ctx.moveTo(this.x+i, spikeBaseY); ctx.lineTo(this.x+i+5, spikeTipY); ctx.lineTo(this.x+i+10, spikeBaseY); 
-                    } 
-                    ctx.fill();
-                } 
-                else {
+                    let spikeBaseY = this.isTop ? bodyY + bodyH : bodyY; let spikeTipY = this.isTop ? spikeBaseY + this.spikeH : spikeBaseY - this.spikeH;
+                    for(let i=0; i<this.width; i+=10) { ctx.moveTo(this.x+i, spikeBaseY); ctx.lineTo(this.x+i+5, spikeTipY); ctx.lineTo(this.x+i+10, spikeBaseY); } ctx.fill();
+                } else {
                     let bodyY = this.isTop ? this.y : this.y+spikeH; let bodyH = this.height-spikeH;
                     ctx.fillStyle="#E52521"; ctx.fillRect(this.x, bodyY, this.width, bodyH); ctx.fillStyle="#821111"; ctx.fillRect(this.x+4, bodyY+4, this.width-8, bodyH-8);
                     ctx.fillStyle="#E52521"; ctx.beginPath();
@@ -297,17 +274,14 @@
                     for(let i=0; i<this.width; i+=10) { ctx.moveTo(this.x+i, spikeY); ctx.lineTo(this.x+i+5, this.isTop?spikeY+spikeH:spikeY-spikeH); ctx.lineTo(this.x+i+10, spikeY); } ctx.fill();
                     if (this.height > 40) {
                         let eY = this.isTop ? this.y+this.height-25 : this.y+25; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(this.x+20, eY, 10, 0, Math.PI*2); ctx.fill();
-                        let ang = Math.atan2((player.y+12)-eY, (player.x+12)-(this.x+20));
-                        ctx.fillStyle="#000"; ctx.beginPath(); ctx.arc((this.x+20)+Math.cos(ang)*5, eY+Math.sin(ang)*5, 4, 0, Math.PI*2); ctx.fill();
+                        let ang = Math.atan2((player.y+12)-eY, (player.x+12)-(this.x+20)); ctx.fillStyle="#000"; ctx.beginPath(); ctx.arc((this.x+20)+Math.cos(ang)*5, eY+Math.sin(ang)*5, 4, 0, Math.PI*2); ctx.fill();
                     }
                 }
             }
         }
 
         function spawnObstacles() {
-            let t = activeLevelData.obsType;
-            let possibleTypes = [];
-
+            let t = activeLevelData.obsType; let possibleTypes = [];
             if (t === "all") possibleTypes = ["standard", "gates", "stomper"];
             else if (t === "mixed") possibleTypes = currentMode === "FLIP" ? ["standard", "stomper"] : ["gates"];
             else if (t === "jump_stomp") possibleTypes = ["standard", "stomper"];
@@ -317,16 +291,9 @@
             let chosen = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
 
             if (chosen === "stomper") {
-                if (stomperCooldown > 0 || (activeLevelData.id === 1 && levelStompers >= 2)) {
-                    chosen = possibleTypes[0]; 
-                    stomperCooldown--;
-                } else {
-                    stomperCooldown = 3; 
-                    if (activeLevelData.id === 1) levelStompers++; 
-                }
-            } else {
-                if (stomperCooldown > 0) stomperCooldown--;
-            }
+                if (stomperCooldown > 0 || (activeLevelData.id === 1 && levelStompers >= 2)) { chosen = possibleTypes[0]; stomperCooldown--; } 
+                else { stomperCooldown = 3; if (activeLevelData.id === 1) levelStompers++; }
+            } else { if (stomperCooldown > 0) stomperCooldown--; }
 
             if (chosen === "standard") entities.push(new Obstacle("standard"));
             else if (chosen === "stomper") entities.push(new Obstacle("stomper"));
@@ -345,7 +312,8 @@
             levelsData.forEach(lvl => {
                 let isUn = lvl.id <= unlockedLevelMax || lvl.id === 4;
                 let btn = document.createElement("button"); btn.className = `level-btn ${isUn?'':'locked'}`;
-                btn.innerHTML = `<span>${lvl.title}</span>`;
+                // Now shows LOCKED instead of the title if the player hasn't unlocked it!
+                btn.innerHTML = `<span>${isUn || lvl.id === 4 ? lvl.title : 'LOCKED'}</span>`;
                 if (isUn) btn.onclick = () => startLevel(lvl.id); grid.appendChild(btn);
             });
         }
@@ -374,13 +342,10 @@
             score = 0; runCoins = 0; frames = 0; baseSpeed = activeLevelData.speed; gameSpeed = baseSpeed; 
             obstacleTimer = 40; coinTimer = 60; powerupTimer = 300;
             shieldActive = false; magnetTimer = 0; slowMoTimer = 0;
-            
-            levelStompers = 0;
-            stomperCooldown = 0;
+            levelStompers = 0; stomperCooldown = 0;
             
             gameContainer.style.backgroundColor = currentMode === "FLY" ? "#240b36" : "#111"; 
-            levelNameUI.innerText = activeLevelData.title; 
-            progressFill.style.width = "0%";
+            levelNameUI.innerText = activeLevelData.title; progressFill.style.width = "0%";
             scoreUI.style.display = id === 4 ? "block" : "none";
         }
 
@@ -397,6 +362,7 @@
 
         function winLevel() {
             gameState = "WIN"; sfx.win();
+            // Up to ID 3 (since 4 is endless)
             if (activeLevelData.id === unlockedLevelMax && unlockedLevelMax < 3) unlockedLevelMax++;
             totalCoins += runCoins + 20; updateSave(); setTimeout(() => screens.win.classList.add("active"), 1000);
         }
@@ -418,7 +384,6 @@
 
             if (gameState === "PLAYING" || gameState === "WIN") {
                 if (gameState === "PLAYING") player.update();
-
                 if (slowMoTimer > 0) { slowMoTimer--; gameSpeed = baseSpeed * 0.7; } else { gameSpeed = baseSpeed; }
                 if (magnetTimer > 0) magnetTimer--;
 
@@ -435,10 +400,7 @@
                     if (activeLevelData.id === 4) {
                         score += 0.1; scoreUI.innerText = "SCORE: " + Math.floor(score); progressFill.style.width = "100%";
                         baseSpeed = 6.5 + (score / 1500); if(baseSpeed > 9.5) baseSpeed = 9.5; 
-                        if (score >= nextEndlessPortalScore) {
-                            entities.push(new Portal()); portalActive = true; obstacleTimer = 100;
-                            nextEndlessPortalScore += 500;
-                        }
+                        if (score >= nextEndlessPortalScore) { entities.push(new Portal()); portalActive = true; obstacleTimer = 100; nextEndlessPortalScore += 500; }
                     } else {
                         if (score >= activeLevelData.winScore && !finishSpawned) { entities.push(new FinishLine()); finishSpawned = true; } 
                         else if (activeLevelData.portalScore && score >= activeLevelData.portalScore && !levelPortalSpawned && !finishSpawned) { 
@@ -448,7 +410,6 @@
 
                     let minGap = Math.max(45, 90 - (gameSpeed*2));
                     if (obstacleTimer <= 0 && !finishSpawned && !portalActive) { spawnObstacles(); obstacleTimer = minGap; }
-                    
                     if (coinTimer <= 0 && !finishSpawned) { entities.push(new Coin()); coinTimer = 40 + Math.random()*60; }
                     if (powerupTimer <= 0 && !finishSpawned) { entities.push(new PowerUp()); powerupTimer = 300 + Math.random()*300; }
                 }
@@ -462,15 +423,12 @@
                         if (ent.type === "portal") {
                             sfx.portal(); screenFlash = 0.6; currentMode = currentMode==="FLIP"?"FLY":"FLIP"; player.vy = 0; gameContainer.style.backgroundColor = currentMode==="FLY"?"#240b36":"#111";
                             modeAlert.innerText = "MODE SWAP!"; modeAlert.style.opacity = "1"; setTimeout(() => modeAlert.style.opacity = "0", 2000);
-                            portalActive = false; obstacleTimer = 50; 
-                            entities.splice(i, 1); continue; 
+                            portalActive = false; obstacleTimer = 50; entities.splice(i, 1); continue; 
                         } else if (ent.type === "finish") winLevel();
                         else if (ent.type === "coin") { sfx.coin(); runCoins++; coinUI.innerText = totalCoins + runCoins; spawnParticles(ent.x, ent.y, 8, "#F6D305"); entities.splice(i, 1); continue; } 
                         else if (ent.type === "powerup") { 
                             sfx.powerup(); spawnParticles(ent.x, ent.y, 15, ent.color);
-                            if (ent.powerType === "shield") shieldActive = true;
-                            if (ent.powerType === "magnet") magnetTimer = 400;
-                            if (ent.powerType === "slow") slowMoTimer = 250;
+                            if (ent.powerType === "shield") shieldActive = true; if (ent.powerType === "magnet") magnetTimer = 400; if (ent.powerType === "slow") slowMoTimer = 250;
                             entities.splice(i, 1); continue;
                         }
                         else if (ent.type === "obs") {
@@ -485,6 +443,28 @@
                     }
                     if (ent.x + ent.width < -50) entities.splice(i, 1);
                 }
+
+                // --------- NEW TUTORIAL OVERLAY LOGIC ---------
+                if (activeLevelData.id === 0 && gameState === "PLAYING") {
+                    ctx.fillStyle = "#fff"; ctx.font = "12px 'Press Start 2P'"; ctx.textAlign = "center";
+                    let arrowBounce = Math.sin(frames * 0.2) * 5;
+                    
+                    if (frames < 300) {
+                        ctx.fillText("TAP OR CLICK TO FLIP GRAVITY", canvas.width/2, 100);
+                        ctx.fillStyle = "#39ff14";
+                        let flipArrowY = player.isFlipped ? player.y + 40 - arrowBounce : player.y - 15 + arrowBounce;
+                        ctx.fillText(player.isFlipped ? "^" : "v", player.x + 12, flipArrowY);
+                    } else if (frames < 600) {
+                        ctx.fillStyle = "#E52521"; ctx.fillText("AVOID THE RED SPIKES!", canvas.width/2, 100);
+                    } else if (frames < 900) {
+                        ctx.fillStyle = "#F6D305"; ctx.fillText("COLLECT COINS & POWERUPS", canvas.width/2, 100);
+                    } else {
+                        ctx.fillStyle = "#39ff14"; ctx.fillText("REACH THE FINISH LINE ->", canvas.width/2, 100);
+                    }
+                    ctx.textAlign = "left"; // Reset align
+                }
+                // ----------------------------------------------
+
                 if (gameState === "PLAYING") frames++;
             } else if (gameState === "GAMEOVER") entities.forEach(e => e.draw());
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gravity Dash: Tuned Edition</title>
+    <title>Gravity Dash: Balanced Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; font-family: 'Press Start 2P', monospace; overflow: hidden; user-select: none; }
@@ -135,7 +135,7 @@
 
         const levelsData = [
             { id: 1, title: "1. THE BASICS", speed: 6.5, winScore: 300, startMode: "FLIP", obsType: "jump_stomp", gapSize: 0 },
-            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLIP", obsType: "mixed", portalScore: 180, gapSize: 175 },
+            { id: 2, title: "2. TAKE FLIGHT", speed: 6.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 185 }, // Changed to full FLY mode
             { id: 3, title: "3. CLAUSTROPHOBIA", speed: 7.5, winScore: 400, startMode: "FLY", obsType: "gates_stomp", gapSize: 145 },
             { id: 4, title: "4. ENDLESS SURVIVAL", speed: 6.5, winScore: Infinity, startMode: "FLIP", obsType: "all", gapSize: 180 } 
         ];
@@ -148,7 +148,6 @@
         let screenShake = 0, screenFlash = 0;
         let shieldActive = false, magnetTimer = 0, slowMoTimer = 0;
         
-        // Stomper Tracking Variables
         let levelStompers = 0; 
         let stomperCooldown = 0;
 
@@ -156,7 +155,7 @@
             x: 100, y: 350, size: 24, vy: 0, gravity: 1.6, isFlipped: false,
             update() {
                 if (currentMode === "FLIP") { this.vy += this.isFlipped ? -this.gravity : this.gravity; } 
-                else if (currentMode === "FLY") { this.vy += isHoldingInput ? -0.6 : 0.5; if(this.vy < -7) this.vy=-7; if(this.vy > 7) this.vy=7; }
+                else if (currentMode === "FLY") { this.vy += isHoldingInput ? -0.7 : 0.6; if(this.vy < -7) this.vy=-7; if(this.vy > 7) this.vy=7; } // Smoother flight
                 this.y += this.vy;
                 if (this.y + this.size > canvas.height - 24) { this.y = canvas.height - 24 - this.size; this.vy = 0; }
                 if (this.y < 24) { this.y = 24; this.vy = 0; }
@@ -166,23 +165,17 @@
                 
                 if (currentMode === "FLIP") { 
                     ctx.fillRect(this.x, this.y, this.size, this.size); 
-                    
-                    // Smiley Face (Looking Forward/Right)
                     ctx.fillStyle = "#000"; 
                     let eyeY = this.isFlipped ? this.y + 16 : this.y + 6;
-                    ctx.fillRect(this.x + 14, eyeY, 3, 4); // Left eye
-                    ctx.fillRect(this.x + 20, eyeY, 3, 4); // Right eye
-                    
+                    ctx.fillRect(this.x + 14, eyeY, 3, 4); 
+                    ctx.fillRect(this.x + 20, eyeY, 3, 4); 
                     ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
                     let smileY = this.isFlipped ? this.y + 10 : this.y + 14;
                     ctx.arc(this.x + 17, smileY, 4, this.isFlipped ? Math.PI : 0, this.isFlipped ? Math.PI*2 : Math.PI);
                     ctx.stroke();
                 } 
                 else { 
-                    // Ship Shape
                     ctx.beginPath(); ctx.moveTo(this.x + this.size + 4, this.y + this.size / 2); ctx.lineTo(this.x, this.y - 4); ctx.lineTo(this.x + 8, this.y + this.size / 2); ctx.lineTo(this.x, this.y + this.size + 4); ctx.fill(); 
-                    
-                    // Smiley Face for Ship (Looking Forward/Right)
                     ctx.fillStyle = "#000"; 
                     ctx.fillRect(this.x + 14, this.y + 8, 3, 3);
                     ctx.fillRect(this.x + 20, this.y + 8, 3, 3);
@@ -242,29 +235,54 @@
             constructor(style, customY=null, customH=null) {
                 super(canvas.width, 0, 40, 0, "obs"); this.passed = false; this.style = style;
                 if (style === "standard") { this.height = 40+Math.random()*100; this.isTop = Math.random()>0.5; this.y = this.isTop ? 24 : canvas.height-24-this.height; } 
-                else if (style === "stomper") { this.height = 70; this.isTop = true; this.y = 24; this.isStomping = false; }
+                else if (style === "stomper") { 
+                    this.height = 80; // 70 body + 10 spikes
+                    this.isTop = Math.random() > 0.5; // 50% chance to be on the floor now!
+                    this.spikeH = 10;
+                    this.y = this.isTop ? 24 : canvas.height - 24 - this.height; 
+                    this.isStomping = false; 
+                }
                 else if (style === "top") { this.height = customH; this.y = 24; this.isTop = true; } 
                 else if (style === "bottom") { this.height = customH; this.y = customY; this.passed = true; this.isTop = false; }
             }
             update() {
                 super.update();
-                if (this.style === "stomper" && player.x > this.x - 120 && player.x < this.x + 100 && this.y < canvas.height - 24 - this.height - 10) {
-                    this.y += 12; // Slam Down
-                    if (!this.isStomping) { spawnParticles(this.x+20, this.y+this.height, 5, "#fff"); this.isStomping=true; }
+                // Stomper trigger zone and movement logic
+                if (this.style === "stomper" && player.x > this.x - 120 && player.x < this.x + 100) {
+                    if (this.isTop && this.y < canvas.height - 24 - this.height - 10) {
+                        this.y += 12; // Slam down
+                        if (!this.isStomping) { spawnParticles(this.x+20, this.y+this.height, 5, "#fff"); this.isStomping=true; }
+                    } else if (!this.isTop && this.y > 24 + 10) {
+                        this.y -= 12; // Slam UP
+                        if (!this.isStomping) { spawnParticles(this.x+20, this.y, 5, "#fff"); this.isStomping=true; }
+                    }
                 }
             }
             draw() {
                 let spikeH = 10; 
                 
                 if (this.style === "stomper") {
-                    ctx.fillStyle = "#666"; ctx.fillRect(this.x, this.y, this.width, this.height);
-                    ctx.fillStyle = "#F6D305"; ctx.fillRect(this.x, this.y + 15, this.width, 20);
+                    let bodyY = this.isTop ? this.y : this.y + this.spikeH;
+                    let bodyH = this.height - this.spikeH; // 70
+                    
+                    ctx.fillStyle = "#666"; ctx.fillRect(this.x, bodyY, this.width, bodyH);
+                    ctx.fillStyle = "#F6D305"; 
+                    let stripeY = this.isTop ? bodyY + 15 : bodyY + bodyH - 35;
+                    ctx.fillRect(this.x, stripeY, this.width, 20);
+                    
                     ctx.fillStyle = "#000";
-                    for(let i=0; i<this.width; i+=10) { ctx.beginPath(); ctx.moveTo(this.x+i, this.y+15); ctx.lineTo(this.x+i+5, this.y+35); ctx.lineTo(this.x+i+10, this.y+35); ctx.lineTo(this.x+i+5, this.y+15); ctx.fill(); }
+                    for(let i=0; i<this.width; i+=10) { 
+                        ctx.beginPath(); ctx.moveTo(this.x+i, stripeY); ctx.lineTo(this.x+i+5, stripeY+20); ctx.lineTo(this.x+i+10, stripeY+20); ctx.lineTo(this.x+i+5, stripeY); ctx.fill(); 
+                    }
+                    
                     ctx.fillStyle = "#ccc"; ctx.beginPath();
-                    let spikeY = this.y + this.height;
-                    for(let i=0; i<this.width; i+=10) { ctx.moveTo(this.x+i, spikeY); ctx.lineTo(this.x+i+5, spikeY+spikeH); ctx.lineTo(this.x+i+10, spikeY); } ctx.fill();
-                    this.height = 70 + spikeH; 
+                    let spikeBaseY = this.isTop ? bodyY + bodyH : bodyY;
+                    let spikeTipY = this.isTop ? spikeBaseY + this.spikeH : spikeBaseY - this.spikeH;
+                    
+                    for(let i=0; i<this.width; i+=10) { 
+                        ctx.moveTo(this.x+i, spikeBaseY); ctx.lineTo(this.x+i+5, spikeTipY); ctx.lineTo(this.x+i+10, spikeBaseY); 
+                    } 
+                    ctx.fill();
                 } 
                 else {
                     let bodyY = this.isTop ? this.y : this.y+spikeH; let bodyH = this.height-spikeH;
@@ -285,7 +303,6 @@
             let t = activeLevelData.obsType;
             let possibleTypes = [];
 
-            // Determine what CAN spawn based on the level rules
             if (t === "all") possibleTypes = ["standard", "gates", "stomper"];
             else if (t === "mixed") possibleTypes = currentMode === "FLIP" ? ["standard", "stomper"] : ["gates"];
             else if (t === "jump_stomp") possibleTypes = ["standard", "stomper"];
@@ -294,20 +311,18 @@
 
             let chosen = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
 
-            // Apply Stomper Rules (Cooldown & Hard Cap for Level 1)
             if (chosen === "stomper") {
                 if (stomperCooldown > 0 || (activeLevelData.id === 1 && levelStompers >= 2)) {
-                    chosen = possibleTypes[0]; // Demote to a standard block or gate
+                    chosen = possibleTypes[0]; 
                     stomperCooldown--;
                 } else {
-                    stomperCooldown = 2; // Set cooldown (at least 2 regular obstacles must spawn before another stomper)
-                    if (activeLevelData.id === 1) levelStompers++; // Increase level 1 count
+                    stomperCooldown = 3; // INCREASED COOLDOWN: Less frequent stompers!
+                    if (activeLevelData.id === 1) levelStompers++; 
                 }
             } else {
                 if (stomperCooldown > 0) stomperCooldown--;
             }
 
-            // Spawn the finalized choice
             if (chosen === "standard") entities.push(new Obstacle("standard"));
             else if (chosen === "stomper") entities.push(new Obstacle("stomper"));
             else if (chosen === "gates") {
@@ -355,7 +370,6 @@
             obstacleTimer = 40; coinTimer = 60; powerupTimer = 300;
             shieldActive = false; magnetTimer = 0; slowMoTimer = 0;
             
-            // Reset Stomper trackers per run
             levelStompers = 0;
             stomperCooldown = 0;
             

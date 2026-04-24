@@ -317,9 +317,9 @@
         function showLevels() {
             hideScreens(); screens.levels.classList.add("active"); let grid = document.getElementById("level-grid"); grid.innerHTML = "";
             levelsData.forEach(lvl => {
-                let isUn = lvl.id <= unlockedLevelMax || lvl.id === 4 || (lvl.id === 5 && unlockedLevelMax >= 4); // Unlock race later
-                let btn = document.createElement("button"); btn.className = `level-btn ${isUn?'':'locked'}`;
-                btn.innerHTML = `<span>${isUn || lvl.id === 4 ? lvl.title : 'LOCKED'}</span>`;
+                let isUn = lvl.id <= unlockedLevelMax || lvl.id === 4 || lvl.id === 5; 
+                let btn = document.createElement("button"); btn.className = `level-btn ${isUn ? '' : 'locked'}`;
+                btn.innerHTML = `<span>${isUn ? lvl.title : 'LOCKED'}</span>`;
                 if (isUn) btn.onclick = () => startLevel(lvl.id); grid.appendChild(btn);
             });
         }

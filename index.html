@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Kaiju Simulator</title>
+    <title>3D Kaiju Simulator: Third Person</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -19,6 +19,7 @@
         .hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; color: #fff; font-size: 16px; pointer-events: none; z-index: 5; text-shadow: 2px 2px 0 #000; }
         .hud-left { display: flex; flex-direction: column; gap: 10px; }
         .hud-coins { color: #F6D305; font-size: 20px; }
+        
         #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none; z-index: 5; display: none; }
         #crosshair::after { content: ''; position: absolute; top: 8px; left: 8px; width: 4px; height: 4px; background: red; border-radius: 50%; }
 
@@ -40,8 +41,9 @@
             <div>CITY DESTROYED: <span id="scoreUI">0</span></div>
             <div class="hud-coins">COINS: <span id="coinUI">0</span></div>
         </div>
-        <div style="text-align: right; font-size: 12px; color: #aaa;">
+        <div style="text-align: right; font-size: 12px; color: #aaa; line-height: 1.5;">
             [ESC] TO PAUSE/SHOP<br><br>
+            [MOUSE] LOOK AROUND<br>
             [W A S D] TO WALK<br>
             [CLICK] MOVIE ABILITY
         </div>
@@ -79,16 +81,15 @@
         }
 
         const kaijuDex = {
-            "Gojira 1954": { cost: 0, height: 40, speed: 1.5, power: 20, color: 0x3a3a3a, beamColor: 0x0088ff, type: "classic", desc: "Classic Atomic Vapor" },
-            "Mecha-Gojira": { cost: 300, height: 45, speed: 2.5, power: 35, color: 0xa0a0a0, beamColor: 0xff0000, type: "mech", desc: "Rapid Finger Missiles" },
-            "Shin Gojira": { cost: 800, height: 55, speed: 1.0, power: 100, color: 0x2b0a0a, beamColor: 0xaa00ff, type: "shin", desc: "Piercing Photon Ray" }
+            "Gojira 1954": { cost: 0, height: 40, speed: 1.5, power: 20, color: 0x3a3a3a, accent: 0x111111, beamColor: 0x0088ff, type: "classic", desc: "Classic Atomic Vapor" },
+            "Mecha-Gojira": { cost: 300, height: 45, speed: 2.5, power: 35, color: 0xa0a0a0, accent: 0xffcc00, beamColor: 0xff0000, type: "mech", desc: "Rapid Finger Missiles" },
+            "Shin Gojira": { cost: 800, height: 55, speed: 1.0, power: 100, color: 0x2b0a0a, accent: 0xff0000, beamColor: 0xaa00ff, type: "shin", desc: "Piercing Photon Ray" }
         };
 
         // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050508, 0.002);
+        scene.fog = new THREE.FogExp2(0x050508, 0.003);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.rotation.order = "YXZ";
         
         const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -108,11 +109,59 @@
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
+        // --- PLAYER (THIRD PERSON) ---
+        let playerGroup = new THREE.Group();
+        scene.add(playerGroup);
+
+        function buildKaijuModel() {
+            // Clear existing model parts
+            while(playerGroup.children.length > 0){ 
+                playerGroup.remove(playerGroup.children[0]); 
+            }
+            
+            let stats = kaijuDex[equippedKaiju];
+            let mat = new THREE.MeshStandardMaterial({ color: stats.color });
+            let spikeMat = new THREE.MeshStandardMaterial({ color: stats.beamColor });
+
+            // Main Body
+            let bodyGeo = new THREE.BoxGeometry(12, 24, 16);
+            let body = new THREE.Mesh(bodyGeo, mat);
+            body.position.y = 15;
+            playerGroup.add(body);
+
+            // Head (facing -Z)
+            let headGeo = new THREE.BoxGeometry(8, 8, 12);
+            let head = new THREE.Mesh(headGeo, mat);
+            head.position.set(0, 30, -8);
+            playerGroup.add(head);
+
+            // Tail
+            let tailGeo = new THREE.BoxGeometry(8, 6, 25);
+            let tail = new THREE.Mesh(tailGeo, mat);
+            tail.position.set(0, 8, 18);
+            playerGroup.add(tail);
+
+            // Legs
+            let legGeo = new THREE.BoxGeometry(6, 15, 8);
+            let legL = new THREE.Mesh(legGeo, mat);
+            legL.position.set(-8, 7.5, 0);
+            let legR = new THREE.Mesh(legGeo, mat);
+            legR.position.set(8, 7.5, 0);
+            playerGroup.add(legL);
+            playerGroup.add(legR);
+
+            // Dorsal Spikes
+            for(let i=0; i<3; i++) {
+                let spikeGeo = new THREE.ConeGeometry(3, 10, 4);
+                let spike = new THREE.Mesh(spikeGeo, spikeMat);
+                spike.position.set(0, 25 - (i*6), 6 + (i*5));
+                spike.rotation.x = -Math.PI/4;
+                playerGroup.add(spike);
+            }
+        }
+
         // --- GAME OBJECTS ---
-        let buildings = [];
-        let particles = [];
-        let projectiles = [];
-        let coins = [];
+        let buildings = []; let particles = []; let projectiles = []; let coins = [];
 
         function generateCity() {
             buildings.forEach(b => scene.remove(b.mesh)); buildings = [];
@@ -126,50 +175,32 @@
             ];
 
             for (let i = 0; i < 300; i++) {
-                let w = 15 + Math.random() * 20;
-                let d = 15 + Math.random() * 20;
-                let h = 30 + Math.random() * 80;
+                let w = 15 + Math.random() * 20; let d = 15 + Math.random() * 20; let h = 30 + Math.random() * 80;
+                let x = (Math.random() - 0.5) * 1000; let z = (Math.random() - 0.5) * 1000;
                 
-                let x = (Math.random() - 0.5) * 800;
-                let z = (Math.random() - 0.5) * 800;
-                
-                // Clear a spawn area
-                if (Math.abs(x) < 50 && Math.abs(z) < 50) continue;
+                if (Math.abs(x) < 60 && Math.abs(z) < 60) continue; // Clear spawn
 
                 let mesh = new THREE.Mesh(buildingGeo, materials[Math.floor(Math.random() * materials.length)]);
-                mesh.position.set(x, h/2, z);
-                mesh.scale.set(w, h, d);
+                mesh.position.set(x, h/2, z); mesh.scale.set(w, h, d);
                 scene.add(mesh);
-                
                 buildings.push({ mesh: mesh, hp: w * h / 50, maxHp: w * h / 50, h: h, w: w, d: d });
             }
         }
 
         // --- CONTROLS & PHYSICS ---
         let keys = { w: false, a: false, s: false, d: false };
-        let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
-        let isFiring = false;
-        let fireCooldown = 0;
+        let isFiring = false; let fireCooldown = 0;
 
-        document.addEventListener('keydown', (e) => {
-            if(gameState !== "PLAYING") return;
-            if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true;
-        });
-        document.addEventListener('keyup', (e) => {
-            if(gameState !== "PLAYING") return;
-            if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false;
-        });
-        document.addEventListener('mousedown', (e) => { 
-            if(gameState === "PLAYING" && document.pointerLockElement === document.body) isFiring = true; 
-        });
+        document.addEventListener('keydown', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
+        document.addEventListener('keyup', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
+        document.addEventListener('mousedown', () => { if(gameState === "PLAYING" && document.pointerLockElement === document.body) isFiring = true; });
         document.addEventListener('mouseup', () => { isFiring = false; });
 
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.body && gameState === "PLAYING") {
-                camera.rotation.y -= e.movementX * 0.002;
-                camera.rotation.x -= e.movementY * 0.002;
-                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                // Mouse rotates the Kaiju left and right
+                playerGroup.rotation.y -= e.movementX * 0.003;
             }
         });
 
@@ -183,81 +214,74 @@
         function fireAbility() {
             let stats = kaijuDex[equippedKaiju];
             
+            // Spawn point is the Kaiju's head
+            let spawnPos = playerGroup.position.clone();
+            spawnPos.y += 30; // Head height
+            
+            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
+            
             if (stats.type === "classic") {
-                // Gojira 1954: Cone of atomic vapor
                 if (fireCooldown <= 0) {
                     for(let i=0; i<3; i++) {
                         let proj = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshBasicMaterial({color: stats.beamColor}));
-                        proj.position.copy(camera.position);
-                        let dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-                        dir.x += (Math.random()-0.5)*0.2; dir.y += (Math.random()-0.5)*0.2; // Spread
+                        proj.position.copy(spawnPos);
+                        let dir = forward.clone();
+                        dir.x += (Math.random()-0.5)*0.3; dir.y += (Math.random()-0.5)*0.3; 
                         scene.add(proj);
-                        projectiles.push({mesh: proj, vel: dir.multiplyScalar(4), life: 30, power: stats.power/2});
+                        projectiles.push({mesh: proj, vel: dir.multiplyScalar(5), life: 30, power: stats.power/2});
                     }
                     fireCooldown = 5;
                 }
             } 
             else if (stats.type === "mech") {
-                // Mecha: Rapid missiles
                 if (fireCooldown <= 0) {
                     let proj = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 6), new THREE.MeshBasicMaterial({color: stats.beamColor}));
-                    proj.position.copy(camera.position);
-                    proj.quaternion.copy(camera.quaternion);
+                    proj.position.copy(spawnPos);
+                    proj.quaternion.copy(playerGroup.quaternion);
                     proj.rotateX(Math.PI/2);
-                    let dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
                     scene.add(proj);
-                    projectiles.push({mesh: proj, vel: dir.multiplyScalar(8), life: 40, power: stats.power});
+                    projectiles.push({mesh: proj, vel: forward.clone().multiplyScalar(10), life: 40, power: stats.power});
                     fireCooldown = 8;
                 }
             }
             else if (stats.type === "shin") {
-                // Shin: Instant Raycast Laser
                 if (fireCooldown <= 0) {
-                    let dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-                    let raycaster = new THREE.Raycaster(camera.position, dir);
+                    let raycaster = new THREE.Raycaster(spawnPos, forward);
                     let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
                     
-                    // Draw visual beam
                     const mat = new THREE.LineBasicMaterial({ color: stats.beamColor, linewidth: 5 });
-                    const pts = [camera.position.clone().add(new THREE.Vector3(0,-5,0)), camera.position.clone().add(dir.multiplyScalar(500))];
+                    const pts = [spawnPos, spawnPos.clone().add(forward.clone().multiplyScalar(500))];
                     const geo = new THREE.BufferGeometry().setFromPoints(pts);
                     const line = new THREE.Line(geo, mat);
                     scene.add(line);
-                    setTimeout(() => scene.remove(line), 100); // flash laser
+                    setTimeout(() => scene.remove(line), 150);
 
-                    // Damage all buildings in line
                     intersects.forEach(hit => {
                         let b = buildings.find(bld => bld.mesh === hit.object);
                         if(b) damageBuilding(b, stats.power * 2);
                     });
-                    fireCooldown = 30; // Slow recharge
+                    fireCooldown = 30;
                 }
             }
         }
 
         function damageBuilding(b, amount) {
             b.hp -= amount;
-            b.mesh.material.color.setHex(0xffaa00); // flash damage
+            b.mesh.material.color.setHex(0xffaa00);
             setTimeout(() => { if(b.hp > 0) b.mesh.material.color.setHex(0x222222); }, 100);
-            
             spawnParticles(b.mesh.position, 0x555555, 5);
 
             if (b.hp <= 0 && b.mesh.visible) {
                 b.mesh.visible = false;
                 score++; document.getElementById("scoreUI").innerText = score;
-                spawnParticles(b.mesh.position, 0xff4400, 30); // Explosion
-                camera.position.y += Math.random() * 2 - 1; // Cam shake
+                spawnParticles(b.mesh.position, 0xff4400, 30); 
                 
-                // Spawn coins
                 let amt = Math.floor(b.maxHp / 10) + 1;
                 for(let i=0; i<amt; i++) {
                     let cmesh = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({color: 0xF6D305}));
-                    cmesh.position.copy(b.mesh.position);
-                    cmesh.position.y = 2; // Ground level
-                    cmesh.position.x += (Math.random()-0.5)*20;
-                    cmesh.position.z += (Math.random()-0.5)*20;
-                    scene.add(cmesh);
-                    coins.push({mesh: cmesh});
+                    cmesh.position.copy(b.mesh.position); cmesh.position.y = 2;
+                    cmesh.position.x += (Math.random()-0.5)*20; cmesh.position.z += (Math.random()-0.5)*20;
+                    scene.add(cmesh); coins.push({mesh: cmesh});
                 }
             }
         }
@@ -265,12 +289,8 @@
         function spawnParticles(pos, color, amt) {
             for(let i=0; i<amt; i++) {
                 let p = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), new THREE.MeshBasicMaterial({color: color}));
-                p.position.copy(pos);
-                scene.add(p);
-                particles.push({
-                    mesh: p, life: 1.0,
-                    vx: (Math.random()-0.5)*4, vy: Math.random()*4, vz: (Math.random()-0.5)*4
-                });
+                p.position.copy(pos); scene.add(p);
+                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*4, vy: Math.random()*4 + 2, vz: (Math.random()-0.5)*4 });
             }
         }
 
@@ -279,57 +299,66 @@
         
         function animate() {
             requestAnimationFrame(animate);
-            let delta = clock.getDelta();
-
+            
             if (gameState === "PLAYING") {
                 let stats = kaijuDex[equippedKaiju];
                 if (fireCooldown > 0) fireCooldown--;
                 if (isFiring) fireAbility();
 
-                // Movement
-                direction.z = Number(keys.w) - Number(keys.s);
+                // 3D Movement
+                // S goes +Z (backward), W goes -Z (forward)
+                direction.z = Number(keys.s) - Number(keys.w);
+                // D goes +X (right), A goes -X (left)
                 direction.x = Number(keys.d) - Number(keys.a);
                 direction.normalize();
 
                 if (direction.z !== 0 || direction.x !== 0) {
-                    let moveSpeed = stats.speed;
-                    let right = new THREE.Vector3(-1,0,0).applyQuaternion(camera.quaternion);
-                    right.y = 0; right.normalize();
-                    let forward = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-                    forward.y = 0; forward.normalize();
+                    let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(playerGroup.quaternion);
+                    let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
 
-                    camera.position.add(forward.multiplyScalar(direction.z * moveSpeed));
-                    camera.position.add(right.multiplyScalar(direction.x * moveSpeed));
-                    
-                    // Head bob & Stomp shake
-                    camera.position.y = stats.height + Math.sin(Date.now() * 0.005) * 2;
+                    playerGroup.position.add(forwardVec.multiplyScalar(direction.z * stats.speed));
+                    playerGroup.position.add(rightVec.multiplyScalar(direction.x * stats.speed));
+
+                    // Make the Kaiju wobble slightly when walking
+                    playerGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.05;
+                } else {
+                    playerGroup.rotation.z = 0; // stand still
                 }
 
-                // Stomp Collision
-                let px = camera.position.x; let pz = camera.position.z;
+                // Camera follows behind the player
+                let cameraOffset = new THREE.Vector3(0, 40, 100); // Up and Behind
+                cameraOffset.applyMatrix4(playerGroup.matrixWorld);
+                camera.position.lerp(cameraOffset, 0.1); // Smooth follow
+                
+                // Camera looks slightly above the Kaiju's head
+                let lookTarget = playerGroup.position.clone();
+                lookTarget.y += 20; 
+                camera.lookAt(lookTarget);
+
+                // Physical Stomping logic
+                let px = playerGroup.position.x; let pz = playerGroup.position.z;
                 buildings.forEach(b => {
-                    if (b.hp > 0 && Math.abs(b.mesh.position.x - px) < b.w/2 + 10 && Math.abs(b.mesh.position.z - pz) < b.d/2 + 10) {
-                        damageBuilding(b, stats.power * 0.5); // Passive stomp damage
+                    if (b.hp > 0 && Math.abs(b.mesh.position.x - px) < b.w/2 + 8 && Math.abs(b.mesh.position.z - pz) < b.d/2 + 8) {
+                        damageBuilding(b, stats.power * 0.5); 
                     }
                 });
 
-                // Coins Collection
+                // Magnetize & Collect Coins
                 for (let i = coins.length - 1; i >= 0; i--) {
                     let c = coins[i];
                     c.mesh.rotation.y += 0.05; c.mesh.rotation.x += 0.05;
-                    if (camera.position.distanceTo(c.mesh.position) < 30) {
+                    if (playerGroup.position.distanceTo(c.mesh.position) < 40) {
                         runCoins++; document.getElementById("coinUI").innerText = runCoins;
                         scene.remove(c.mesh); coins.splice(i, 1);
                     }
                 }
 
-                // Projectiles
+                // Update Projectiles
                 for (let i = projectiles.length - 1; i >= 0; i--) {
                     let p = projectiles[i];
                     p.mesh.position.add(p.vel);
                     p.life--;
                     
-                    // Check collision
                     let hit = false;
                     for(let j=0; j<buildings.length; j++) {
                         let b = buildings[j];
@@ -337,17 +366,16 @@
                             damageBuilding(b, p.power); hit = true; break;
                         }
                     }
-
                     if (hit || p.life <= 0) { scene.remove(p.mesh); projectiles.splice(i, 1); }
                 }
 
-                // Particles
+                // Update Particles
                 for (let i = particles.length - 1; i >= 0; i--) {
                     let p = particles[i];
-                    p.vy -= 0.2; // gravity
+                    p.vy -= 0.1; // gravity
                     p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz;
-                    p.life -= 0.05;
-                    if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+                    p.life -= 0.02;
+                    if (p.life <= 0 || p.mesh.position.y < 0) { scene.remove(p.mesh); particles.splice(i, 1); }
                 }
             }
             
@@ -360,7 +388,7 @@
         function showMenu() {
             document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll();
             document.getElementById("start-screen").classList.remove("hidden");
-            camera.position.set(0, 100, 200); camera.lookAt(0,0,0); // Menu cam view
+            camera.position.set(0, 150, 300); camera.lookAt(0,0,0);
         }
 
         function showShop() {
@@ -392,10 +420,9 @@
             gameState = "PLAYING"; runCoins = 0; score = 0;
             document.getElementById("scoreUI").innerText = "0"; document.getElementById("coinUI").innerText = "0";
             
-            let stats = kaijuDex[equippedKaiju];
-            camera.position.set(0, stats.height, 0);
-            camera.rotation.set(0,0,0);
-            
+            playerGroup.position.set(0, 0, 0);
+            playerGroup.rotation.set(0, 0, 0);
+            buildKaijuModel();
             generateCity();
         }
 

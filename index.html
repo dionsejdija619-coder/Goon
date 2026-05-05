@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Kaiju Simulator: Ultra Realism</title>
+    <title>3D Kaiju Simulator: Massive Scale</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -41,11 +41,12 @@
             <div>CITY DESTROYED: <span id="scoreUI">0</span></div>
             <div class="hud-coins">COINS: <span id="coinUI">0</span></div>
         </div>
-        <div style="text-align: right; font-size: 12px; color: #aaa; line-height: 1.5; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #333;">
+        <div style="text-align: right; font-size: 10px; color: #aaa; line-height: 1.5; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #333;">
             [ESC] TO PAUSE/SHOP<br><br>
             [MOUSE] LOOK AROUND<br>
             [W A S D] TO WALK<br>
-            [CLICK] MOVIE ABILITY
+            [L-CLICK] PRIMARY ABILITY<br>
+            [R-CLICK] SECONDARY ABILITY
         </div>
     </div>
 
@@ -81,73 +82,48 @@
         }
 
         const kaijuDex = {
-            "Gojira 1954": { cost: 0, height: 40, speed: 1.5, power: 20, color: 0x222222, metal: 0.1, rough: 0.8, beamColor: 0x0088ff, type: "classic", desc: "Classic Atomic Vapor" },
-            "Mecha-Gojira": { cost: 300, height: 45, speed: 2.5, power: 35, color: 0x888899, metal: 0.9, rough: 0.3, beamColor: 0xff0000, type: "mech", desc: "Rapid Finger Missiles" },
-            "Shin Gojira": { cost: 800, height: 55, speed: 1.0, power: 100, color: 0x1a0505, metal: 0.2, rough: 0.5, beamColor: 0xaa00ff, type: "shin", desc: "Piercing Photon Ray" }
+            "Gojira 1954": { cost: 0, speed: 2.0, power: 30, color: 0x222222, metal: 0.1, rough: 0.8, beamColor: 0x0088ff, type: "classic", desc: "L: Atomic Ray | R: Nuclear Pulse" },
+            "Mecha-Gojira": { cost: 300, speed: 3.5, power: 45, color: 0x888899, metal: 0.9, rough: 0.3, beamColor: 0xff0000, type: "mech", desc: "L: Finger Missiles | R: Chest Cannon" },
+            "Shin Gojira": { cost: 800, speed: 1.5, power: 120, color: 0x1a0505, metal: 0.2, rough: 0.5, beamColor: 0xaa00ff, type: "shin", desc: "L: Photon Ray | R: Dorsal Lasers" }
         };
 
-        // --- THREE.JS SETUP WITH REALISM TWEAKS ---
+        // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x020205);
-        scene.fog = new THREE.FogExp2(0x020205, 0.002); // Dense cinematic fog
+        scene.fog = new THREE.FogExp2(0x020205, 0.001); // Thinner fog so you can see further
 
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1500);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2500);
         
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        // Removed heavy shadow maps to kill lag
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x111122, 1.5); // Dark blue ambient
+        // Simple Lighting (No Lag)
+        const ambientLight = new THREE.AmbientLight(0x222233, 1.5);
         scene.add(ambientLight);
         
-        const moonLight = new THREE.DirectionalLight(0xaaccff, 1.5); // Pale moonlight
+        const moonLight = new THREE.DirectionalLight(0xaaccff, 1.2);
         moonLight.position.set(200, 300, 200);
-        moonLight.castShadow = true;
-        moonLight.shadow.mapSize.width = 2048;
-        moonLight.shadow.mapSize.height = 2048;
-        moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 1000;
-        moonLight.shadow.camera.left = -300;
-        moonLight.shadow.camera.right = 300;
-        moonLight.shadow.camera.top = 300;
-        moonLight.shadow.camera.bottom = -300;
-        moonLight.shadow.bias = -0.001;
         scene.add(moonLight);
 
-        const rimLight = new THREE.DirectionalLight(0xff5500, 0.5); // Orange city glow from below/side
-        rimLight.position.set(-200, 50, -200);
-        scene.add(rimLight);
-
-        // Procedural Ground Texture
-        const groundCanvas = document.createElement('canvas'); groundCanvas.width = 512; groundCanvas.height = 512;
-        const gCtx = groundCanvas.getContext('2d');
-        gCtx.fillStyle = '#0a0a0c'; gCtx.fillRect(0,0,512,512);
-        for(let i=0; i<5000; i++) { gCtx.fillStyle = Math.random()>0.5?'#111':'#050505'; gCtx.fillRect(Math.random()*512, Math.random()*512, 2, 2); }
-        const groundTex = new THREE.CanvasTexture(groundCanvas);
-        groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping; groundTex.repeat.set(50, 50);
-
-        const groundGeo = new THREE.PlaneGeometry(3000, 3000);
-        const groundMat = new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.9, metalness: 0.1 });
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(5000, 5000);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.9 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
         scene.add(ground);
 
         // --- PROCEDURAL BUILDING TEXTURE ---
         function createBuildingTexture() {
-            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 512;
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, 0, 256, 512);
-            for(let x=10; x<246; x+=25) {
-                for(let y=10; y<502; y+=30) {
+            ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, 0, 128, 256);
+            for(let x=5; x<120; x+=15) {
+                for(let y=5; y<250; y+=20) {
                     if(Math.random() > 0.4) {
-                        ctx.fillStyle = Math.random() > 0.8 ? '#ffffaa' : (Math.random() > 0.5 ? '#aaccff' : '#222233'); // Lights
-                        ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
-                        ctx.fillRect(x, y, 15, 20);
-                        ctx.shadowBlur = 0;
+                        ctx.fillStyle = Math.random() > 0.8 ? '#ffffaa' : '#222233';
+                        ctx.fillRect(x, y, 8, 12);
                     }
                 }
             }
@@ -156,6 +132,7 @@
             return tex;
         }
         const buildingTex = createBuildingTexture();
+        const bMatBase = new THREE.MeshStandardMaterial({ map: buildingTex, roughness: 0.8, metalness: 0.1 });
 
         // --- PLAYER (THIRD PERSON) ---
         let playerGroup = new THREE.Group();
@@ -165,29 +142,31 @@
             while(playerGroup.children.length > 0){ playerGroup.remove(playerGroup.children[0]); }
             
             let stats = kaijuDex[equippedKaiju];
-            // Physical material reacts beautifully to light
-            let mat = new THREE.MeshPhysicalMaterial({ color: stats.color, metalness: stats.metal, roughness: stats.rough, clearcoat: 0.2 });
-            let spikeMat = new THREE.MeshStandardMaterial({ color: stats.beamColor, emissive: stats.beamColor, emissiveIntensity: 0.5 });
+            let mat = new THREE.MeshStandardMaterial({ color: stats.color, metalness: stats.metal, roughness: stats.rough });
+            let spikeMat = new THREE.MeshBasicMaterial({ color: stats.beamColor }); // Basic material avoids lighting lag
 
             let bodyGeo = new THREE.BoxGeometry(12, 24, 16); let body = new THREE.Mesh(bodyGeo, mat);
-            body.position.y = 15; body.castShadow = true; playerGroup.add(body);
+            body.position.y = 15; playerGroup.add(body);
 
             let headGeo = new THREE.BoxGeometry(8, 8, 12); let head = new THREE.Mesh(headGeo, mat);
-            head.position.set(0, 30, -8); head.castShadow = true; playerGroup.add(head);
+            head.position.set(0, 30, -8); playerGroup.add(head);
 
             let tailGeo = new THREE.BoxGeometry(8, 6, 25); let tail = new THREE.Mesh(tailGeo, mat);
-            tail.position.set(0, 8, 18); tail.castShadow = true; playerGroup.add(tail);
+            tail.position.set(0, 8, 18); playerGroup.add(tail);
 
             let legGeo = new THREE.BoxGeometry(6, 15, 8);
-            let legL = new THREE.Mesh(legGeo, mat); legL.position.set(-8, 7.5, 0); legL.castShadow = true; playerGroup.add(legL);
-            let legR = new THREE.Mesh(legGeo, mat); legR.position.set(8, 7.5, 0); legR.castShadow = true; playerGroup.add(legR);
+            let legL = new THREE.Mesh(legGeo, mat); legL.position.set(-8, 7.5, 0); playerGroup.add(legL);
+            let legR = new THREE.Mesh(legGeo, mat); legR.position.set(8, 7.5, 0); playerGroup.add(legR);
 
-            for(let i=0; i<3; i++) {
+            for(let i=0; i<4; i++) {
                 let spikeGeo = new THREE.ConeGeometry(3, 10, 4);
                 let spike = new THREE.Mesh(spikeGeo, spikeMat);
-                spike.position.set(0, 25 - (i*6), 6 + (i*5)); spike.rotation.x = -Math.PI/4;
+                spike.position.set(0, 25 - (i*5), 6 + (i*4)); spike.rotation.x = -Math.PI/4;
                 playerGroup.add(spike);
             }
+
+            // Make the Kaiju massive!
+            playerGroup.scale.set(3, 3, 3);
         }
 
         // --- GAME OBJECTS ---
@@ -200,18 +179,20 @@
             const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
 
             for (let i = 0; i < 400; i++) {
-                let w = 15 + Math.random() * 25; let d = 15 + Math.random() * 25; let h = 40 + Math.random() * 120;
-                let x = (Math.random() - 0.5) * 1200; let z = (Math.random() - 0.5) * 1200;
+                // Smaller buildings relative to Kaiju
+                let w = 20 + Math.random() * 30; let d = 20 + Math.random() * 30; 
+                let h = 20 + Math.random() * 80; // Shorter on average
+                if(Math.random() > 0.9) h += 80; // Occasional skyscraper
                 
-                if (Math.abs(x) < 80 && Math.abs(z) < 80) continue; // Clear spawn
+                let x = (Math.random() - 0.5) * 1600; let z = (Math.random() - 0.5) * 1600;
+                if (Math.abs(x) < 120 && Math.abs(z) < 120) continue; // Clear spawn
 
-                let bMat = new THREE.MeshStandardMaterial({ map: buildingTex, roughness: 0.6, metalness: 0.2 });
-                let bTexClone = buildingTex.clone(); bTexClone.needsUpdate = true;
-                bTexClone.repeat.set(w/20, h/20); bMat.map = bTexClone; // Scale windows properly
+                let bMat = bMatBase.clone();
+                bMat.map = buildingTex.clone(); bMat.map.needsUpdate = true;
+                bMat.map.repeat.set(w/30, h/30); 
 
                 let mesh = new THREE.Mesh(buildingGeo, bMat);
                 mesh.position.set(x, h/2, z); mesh.scale.set(w, h, d);
-                mesh.castShadow = true; mesh.receiveShadow = true;
                 scene.add(mesh);
                 buildings.push({ mesh: mesh, hp: w * h / 50, maxHp: w * h / 50, h: h, w: w, d: d });
             }
@@ -219,65 +200,155 @@
 
         // --- CONTROLS & PHYSICS ---
         let keys = { w: false, a: false, s: false, d: false }; let direction = new THREE.Vector3();
-        let isFiring = false; let fireCooldown = 0; let camShake = 0;
+        let isFiring = false; let fireCooldown = 0; let fireCooldownRight = 0; let camShake = 0;
 
         document.addEventListener('keydown', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
         document.addEventListener('keyup', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
-        document.addEventListener('mousedown', () => { if(gameState === "PLAYING" && document.pointerLockElement === document.body) isFiring = true; });
-        document.addEventListener('mouseup', () => { isFiring = false; });
+        
+        document.addEventListener('mousedown', (e) => { 
+            if(gameState !== "PLAYING" || document.pointerLockElement !== document.body) return;
+            if(e.button === 0) isFiring = true; 
+            if(e.button === 2) fireSecondaryAbility(); 
+        });
+        document.addEventListener('mouseup', (e) => { if(e.button === 0) isFiring = false; });
+        document.addEventListener('contextmenu', e => e.preventDefault()); // Stop right-click menu
+
         document.addEventListener('mousemove', (e) => { if (document.pointerLockElement === document.body && gameState === "PLAYING") playerGroup.rotation.y -= e.movementX * 0.003; });
         document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== document.body && gameState === "PLAYING") { totalCoins += runCoins; updateSave(); showMenu(); }});
 
-        // --- WEAPONS / ABILITIES ---
+        // --- OPTIMIZED ABILITIES ---
         function fireAbility() {
             let stats = kaijuDex[equippedKaiju];
-            let spawnPos = playerGroup.position.clone(); spawnPos.y += 30; 
+            let spawnPos = playerGroup.position.clone(); spawnPos.y += 90; // Scaled head height
             let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
             
             if (stats.type === "classic" && fireCooldown <= 0) {
-                camShake = 2;
-                for(let i=0; i<5; i++) {
-                    let proj = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({color: stats.beamColor, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.8}));
-                    proj.position.copy(spawnPos);
-                    let dir = forward.clone(); dir.x += (Math.random()-0.5)*0.4; dir.y += (Math.random()-0.5)*0.4; 
-                    scene.add(proj);
-                    projectiles.push({mesh: proj, vel: dir.multiplyScalar(6), life: 40, power: stats.power/2});
-                    
-                    // Light follow
-                    let light = new THREE.PointLight(stats.beamColor, 2, 100); proj.add(light);
-                }
-                fireCooldown = 5;
-            } 
-            else if (stats.type === "mech" && fireCooldown <= 0) {
+                // Raycast Continuous Atomic Ray (No lag)
                 camShake = 1;
-                let proj = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 8), new THREE.MeshStandardMaterial({color: 0x333333, emissive: stats.beamColor, emissiveIntensity: 2}));
-                proj.position.copy(spawnPos); proj.quaternion.copy(playerGroup.quaternion); proj.rotateX(Math.PI/2);
-                scene.add(proj);
-                projectiles.push({mesh: proj, vel: forward.clone().multiplyScalar(12), life: 50, power: stats.power});
-                let light = new THREE.PointLight(stats.beamColor, 2, 50); proj.add(light);
-                fireCooldown = 6;
-            }
-            else if (stats.type === "shin" && fireCooldown <= 0) {
-                camShake = 5;
                 let raycaster = new THREE.Raycaster(spawnPos, forward);
                 let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
                 
-                const mat = new THREE.LineBasicMaterial({ color: stats.beamColor, linewidth: 10, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
-                const pts = [spawnPos, spawnPos.clone().add(forward.clone().multiplyScalar(1000))];
+                let dist = 800;
+                if(intersects.length > 0) {
+                    dist = intersects[0].distance;
+                    let b = buildings.find(bld => bld.mesh === intersects[0].object);
+                    if(b) damageBuilding(b, stats.power);
+                }
+
+                // Draw visual cylinder
+                let cylGeo = new THREE.CylinderGeometry(2, 6, dist, 8);
+                cylGeo.translate(0, dist/2, 0); // Pivot at start
+                cylGeo.rotateX(Math.PI/2); // Face Z
+                let cyl = new THREE.Mesh(cylGeo, new THREE.MeshBasicMaterial({color: stats.beamColor, transparent: true, opacity: 0.8}));
+                cyl.position.copy(spawnPos);
+                cyl.quaternion.copy(playerGroup.quaternion);
+                scene.add(cyl);
+                setTimeout(() => scene.remove(cyl), 50); // Flash quickly
+
+                fireCooldown = 5;
+            } 
+            else if (stats.type === "mech" && fireCooldown <= 0) {
+                // Fast low-poly missiles
+                camShake = 0.5;
+                let proj = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 15, 6), new THREE.MeshBasicMaterial({color: stats.beamColor}));
+                proj.position.copy(spawnPos); 
+                proj.position.x += (Math.random()-0.5)*20; // Spread from fingers
+                proj.quaternion.copy(playerGroup.quaternion); proj.rotateX(Math.PI/2);
+                scene.add(proj);
+                projectiles.push({mesh: proj, vel: forward.clone().multiplyScalar(20), life: 40, power: stats.power});
+                fireCooldown = 6;
+            }
+            else if (stats.type === "shin" && fireCooldown <= 0) {
+                // Instant Piercing Raycast
+                camShake = 3;
+                let raycaster = new THREE.Raycaster(spawnPos, forward);
+                let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+                
+                const mat = new THREE.LineBasicMaterial({ color: stats.beamColor, linewidth: 5 });
+                const pts = [spawnPos, spawnPos.clone().add(forward.clone().multiplyScalar(1500))];
                 const geo = new THREE.BufferGeometry().setFromPoints(pts);
                 const line = new THREE.Line(geo, mat);
                 scene.add(line);
-                
-                let flash = new THREE.PointLight(stats.beamColor, 5, 500);
-                flash.position.copy(spawnPos); scene.add(flash);
-
-                setTimeout(() => { scene.remove(line); scene.remove(flash); }, 200);
+                setTimeout(() => scene.remove(line), 100);
 
                 intersects.forEach(hit => {
                     let b = buildings.find(bld => bld.mesh === hit.object);
                     if(b) damageBuilding(b, stats.power * 2);
                 });
-                fireCooldown = 40;
+                fireCooldown = 30; // Overheat
+            }
+        }
+
+        function fireSecondaryAbility() {
+            let stats = kaijuDex[equippedKaiju];
+            if(fireCooldownRight > 0) return;
+
+            let spawnPos = playerGroup.position.clone();
+            
+            if (stats.type === "classic") {
+                // Nuclear Pulse (AoE explosion)
+                camShake = 8;
+                let sphereGeo = new THREE.SphereGeometry(150, 16, 16);
+                let sphere = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({color: stats.beamColor, wireframe: true, transparent: true, opacity: 0.5}));
+                sphere.position.copy(spawnPos); scene.add(sphere);
+                
+                let scale = 0;
+                let pulseAnim = setInterval(() => {
+                    scale += 0.1; sphere.scale.set(scale, scale, scale);
+                    if(scale > 1) { clearInterval(pulseAnim); scene.remove(sphere); }
+                }, 16);
+
+                buildings.forEach(b => {
+                    if(b.hp > 0 && b.mesh.position.distanceTo(spawnPos) < 150) damageBuilding(b, stats.power * 5);
+                });
+                fireCooldownRight = 100;
+            }
+            else if (stats.type === "mech") {
+                // Chest Cannon (Massive Cylinder)
+                camShake = 5;
+                spawnPos.y += 45; // Chest height
+                let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
+                
+                let cylGeo = new THREE.CylinderGeometry(15, 15, 1000, 12);
+                cylGeo.translate(0, 500, 0); cylGeo.rotateX(Math.PI/2);
+                let cyl = new THREE.Mesh(cylGeo, new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 0.9}));
+                cyl.position.copy(spawnPos); cyl.quaternion.copy(playerGroup.quaternion);
+                scene.add(cyl);
+                setTimeout(() => scene.remove(cyl), 300);
+
+                let raycaster = new THREE.Raycaster(spawnPos, forward);
+                raycaster.params.Line.threshold = 15; // Thick ray
+                let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+                intersects.forEach(hit => {
+                    let b = buildings.find(bld => bld.mesh === hit.object);
+                    if(b) damageBuilding(b, stats.power * 4);
+                });
+                fireCooldownRight = 120;
+            }
+            else if (stats.type === "shin") {
+                // Dorsal Lasers (Omnidirectional array)
+                camShake = 6;
+                spawnPos.y += 75; // Back height
+                
+                for(let i=0; i<15; i++) {
+                    // Random upward/forward arc
+                    let dir = new THREE.Vector3((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2).normalize();
+                    let raycaster = new THREE.Raycaster(spawnPos, dir);
+                    let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+                    
+                    const mat = new THREE.LineBasicMaterial({ color: stats.beamColor });
+                    const pts = [spawnPos, spawnPos.clone().add(dir.multiplyScalar(800))];
+                    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                    const line = new THREE.Line(geo, mat);
+                    scene.add(line);
+                    setTimeout(() => scene.remove(line), 200);
+
+                    intersects.forEach(hit => {
+                        let b = buildings.find(bld => bld.mesh === hit.object);
+                        if(b) damageBuilding(b, stats.power * 3);
+                    });
+                }
+                fireCooldownRight = 150;
             }
         }
 
@@ -285,25 +356,19 @@
             b.hp -= amount;
             b.mesh.material.emissive.setHex(0xffaa00);
             setTimeout(() => { if(b.hp > 0) b.mesh.material.emissive.setHex(0x000000); }, 100);
-            spawnParticles(b.mesh.position, 0x333333, 3, false); // Smoke
 
             if (b.hp <= 0 && b.mesh.visible) {
                 b.mesh.visible = false;
                 score++; document.getElementById("scoreUI").innerText = score;
-                camShake = 8;
                 
-                spawnParticles(b.mesh.position, 0xff5500, 20, true); // Fire explosion
-                spawnParticles(b.mesh.position, 0x222222, 30, false); // Debris
+                spawnParticles(b.mesh.position, 0xff5500, 5, true); // Fire (low count)
+                spawnParticles(b.mesh.position, 0x222222, 10, false); // Debris (low count)
                 
-                let explosionLight = new THREE.PointLight(0xff4400, 5, 200);
-                explosionLight.position.copy(b.mesh.position); scene.add(explosionLight);
-                setTimeout(() => scene.remove(explosionLight), 500);
-                
-                let amt = Math.floor(b.maxHp / 10) + 1;
+                let amt = Math.floor(b.maxHp / 20) + 1;
                 for(let i=0; i<amt; i++) {
-                    let cmesh = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshStandardMaterial({color: 0xF6D305, metalness: 1.0, roughness: 0.2, emissive: 0xaa8800}));
-                    cmesh.position.copy(b.mesh.position); cmesh.position.y = 2;
-                    cmesh.position.x += (Math.random()-0.5)*30; cmesh.position.z += (Math.random()-0.5)*30;
+                    let cmesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({color: 0xF6D305}));
+                    cmesh.position.copy(b.mesh.position); cmesh.position.y = 5;
+                    cmesh.position.x += (Math.random()-0.5)*40; cmesh.position.z += (Math.random()-0.5)*40;
                     scene.add(cmesh); coins.push({mesh: cmesh});
                 }
             }
@@ -311,16 +376,15 @@
 
         function spawnParticles(pos, color, amt, glow) {
             let mat = glow ? 
-                new THREE.MeshBasicMaterial({color: color, transparent: true, blending: THREE.AdditiveBlending}) : 
-                new THREE.MeshStandardMaterial({color: color, roughness: 0.9});
+                new THREE.MeshBasicMaterial({color: color}) : 
+                new THREE.MeshBasicMaterial({color: color}); // Basic materials = no light lag
             
             for(let i=0; i<amt; i++) {
-                let s = Math.random() * 4 + 2;
+                let s = Math.random() * 8 + 4;
                 let p = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), mat);
                 p.position.copy(pos);
-                if(!glow) p.castShadow = true;
                 scene.add(p);
-                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*6, vy: Math.random()*8 + 2, vz: (Math.random()-0.5)*6 });
+                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*8, vy: Math.random()*10 + 5, vz: (Math.random()-0.5)*8 });
             }
         }
 
@@ -331,6 +395,7 @@
             if (gameState === "PLAYING") {
                 let stats = kaijuDex[equippedKaiju];
                 if (fireCooldown > 0) fireCooldown--;
+                if (fireCooldownRight > 0) fireCooldownRight--;
                 if (isFiring) fireAbility();
 
                 direction.z = Number(keys.s) - Number(keys.w);
@@ -342,17 +407,17 @@
                     let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
                     playerGroup.position.add(forwardVec.multiplyScalar(direction.z * stats.speed));
                     playerGroup.position.add(rightVec.multiplyScalar(direction.x * stats.speed));
-                    playerGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.03; // Heavy walk wobble
+                    playerGroup.rotation.z = Math.sin(Date.now() * 0.005) * 0.05; // Slower, heavier walk wobble
                     
-                    if(Math.random() < 0.05) camShake = 1.5; // Stomp shake
+                    if(Math.random() < 0.02) camShake = 2; // Heavy Stomp shake
                 } else { playerGroup.rotation.z = 0; }
 
-                // Cinematic Camera Follow
-                let cameraOffset = new THREE.Vector3(0, 50, 120); 
+                // Cinematic Camera Follow (Scaled up)
+                let cameraOffset = new THREE.Vector3(0, 150, 300); // Higher and further back
                 cameraOffset.applyMatrix4(playerGroup.matrixWorld);
                 camera.position.lerp(cameraOffset, 0.08); 
                 
-                let lookTarget = playerGroup.position.clone(); lookTarget.y += 25; 
+                let lookTarget = playerGroup.position.clone(); lookTarget.y += 80; 
                 camera.lookAt(lookTarget);
 
                 if(camShake > 0) {
@@ -362,15 +427,15 @@
                     if(camShake < 0.1) camShake = 0;
                 }
 
-                // Collisions
+                // Collisions (Scaled up bounding boxes)
                 let px = playerGroup.position.x; let pz = playerGroup.position.z;
                 buildings.forEach(b => {
-                    if (b.hp > 0 && Math.abs(b.mesh.position.x - px) < b.w/2 + 8 && Math.abs(b.mesh.position.z - pz) < b.d/2 + 8) damageBuilding(b, stats.power * 0.5); 
+                    if (b.hp > 0 && Math.abs(b.mesh.position.x - px) < b.w/2 + 25 && Math.abs(b.mesh.position.z - pz) < b.d/2 + 25) damageBuilding(b, stats.power * 0.5); 
                 });
 
                 for (let i = coins.length - 1; i >= 0; i--) {
                     let c = coins[i]; c.mesh.rotation.y += 0.05; c.mesh.rotation.x += 0.05;
-                    if (playerGroup.position.distanceTo(c.mesh.position) < 50) {
+                    if (playerGroup.position.distanceTo(c.mesh.position) < 80) { // Bigger magnet radius
                         runCoins++; document.getElementById("coinUI").innerText = runCoins;
                         scene.remove(c.mesh); coins.splice(i, 1);
                     }
@@ -389,10 +454,9 @@
                 }
 
                 for (let i = particles.length - 1; i >= 0; i--) {
-                    let p = particles[i]; p.vy -= 0.15; // gravity
+                    let p = particles[i]; p.vy -= 0.3; // gravity
                     p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz;
-                    p.life -= 0.02;
-                    if(p.mesh.material.transparent) p.mesh.material.opacity = p.life; // Fade fire
+                    p.life -= 0.03;
                     if (p.life <= 0 || p.mesh.position.y < 0) { scene.remove(p.mesh); particles.splice(i, 1); }
                 }
             }
@@ -401,7 +465,7 @@
 
         // --- UI ROUTING ---
         function hideAll() { document.querySelectorAll('.ui-layer, .hud, #crosshair').forEach(e => e.classList.add('hidden')); document.getElementById('crosshair').style.display = 'none'; }
-        function showMenu() { document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll(); document.getElementById("start-screen").classList.remove("hidden"); camera.position.set(0, 200, 400); camera.lookAt(0,0,0); }
+        function showMenu() { document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll(); document.getElementById("start-screen").classList.remove("hidden"); camera.position.set(0, 400, 800); camera.lookAt(0,0,0); }
         function showShop() {
             hideAll(); document.getElementById("shop-screen").classList.remove("hidden"); let html = "";
             for (let k in kaijuDex) {
@@ -421,7 +485,7 @@
             document.body.requestPointerLock();
             hideAll(); document.getElementById("game-hud").classList.remove("hidden");
             document.getElementById("crosshair").style.display = "block";
-            gameState = "PLAYING"; runCoins = 0; score = 0; camShake = 0;
+            gameState = "PLAYING"; runCoins = 0; score = 0; camShake = 0; fireCooldownRight = 0;
             document.getElementById("scoreUI").innerText = "0"; document.getElementById("coinUI").innerText = "0";
             playerGroup.position.set(0, 0, 0); playerGroup.rotation.set(0, 0, 0);
             buildKaijuModel(); generateCity();

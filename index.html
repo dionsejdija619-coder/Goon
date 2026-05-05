@@ -3,428 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Kaiju: Browser Brawl</title>
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500&display=swap" rel="stylesheet">
+    <title>Kaiju Web Brawler: Final Version</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Teko', sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Teko', sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10, 10, 15, 0.9); color: #fff; z-index: 10; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.8); color: #fff; z-index: 10; }
         .hidden { display: none !important; }
         
-        h1 { font-size: 80px; margin: 0; color: #fff; text-shadow: 4px 4px 0 #E52521; text-transform: uppercase; letter-spacing: 2px; line-height: 1; }
-        p { font-size: 24px; margin-bottom: 25px; color: #aaa; }
+        h1 { font-size: 90px; margin: 0; color: #fff; text-shadow: 4px 4px 0 #E52521; text-transform: uppercase; line-height: 1; }
+        p { font-size: 28px; margin-bottom: 20px; color: #ddd; }
         
-        .hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        
-        /* Health Bars */
-        .health-container { position: absolute; top: 20px; width: 400px; height: 30px; background: #222; border: 3px solid #555; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 5; box-shadow: 0 0 5px #000; }
+
+        .health-container { position: absolute; top: 20px; width: 350px; height: 35px; background: #222; border: 4px solid #000; z-index: 5; }
         .health-fill { height: 100%; transition: width 0.1s; }
         #player-health-bar { left: 20px; }
         #player-health-fill { background: #39ff14; width: 100%; }
         #enemy-health-bar { right: 20px; }
         #enemy-health-fill { background: #E52521; width: 100%; float: right; }
-        .health-label { position: absolute; top: -25px; font-size: 24px; color: #fff; text-shadow: 2px 2px 0 #000; }
+        .health-label { position: absolute; top: -30px; font-size: 28px; color: #fff; text-shadow: 2px 2px 0 #000; }
 
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; background: rgba(255, 255, 255, 0.8); border-radius: 50%; pointer-events: none; }
+        .controls-hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 22px; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 5px; text-align: center; z-index: 5; }
 
-        button { background: #111; color: #fff; border: 3px solid #fff; padding: 10px 30px; font-size: 24px; font-family: 'Teko', sans-serif; cursor: pointer; text-transform: uppercase; margin: 10px; transition: 0.2s; pointer-events: auto; }
-        button:hover { background: #E52521; border-color: #E52521; transform: scale(1.05); }
-        .btn-shop { border-color: #F6D305; color: #F6D305; }
-        .btn-shop:hover { background: #F6D305; color: #000; }
-        
-        #shop-content { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; width: 90%; max-width: 800px; }
-        .shop-item { background: #1a1a1a; border: 3px solid #444; padding: 15px; width: 220px; text-align: center; }
-        .shop-item.equipped { border-color: #39ff14; }
-        .buy-btn { font-size: 20px; padding: 5px 10px; width: 100%; margin-top: 10px; }
-
-        .controls-hint { position: absolute; bottom: 20px; left: 20px; color: #fff; font-size: 20px; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 10px; }
+        button { background: #E52521; color: #fff; border: 4px solid #fff; padding: 15px 40px; font-size: 32px; font-family: 'Teko', sans-serif; cursor: pointer; text-transform: uppercase; box-shadow: 4px 4px 0 #000; transition: 0.1s; pointer-events: auto; }
+        button:hover { background: #fff; color: #E52521; transform: translateY(-4px); box-shadow: 4px 8px 0 #000; }
     </style>
 </head>
 <body>
-    <div id="game-hud" class="hud hidden">
+    <div id="game-hud" class="hidden">
         <div id="crosshair"></div>
         <div id="player-health-bar" class="health-container">
-            <div class="health-label" style="left: 0;">YOU</div>
+            <div class="health-label" style="left: 0;">YOU (KAIJU ALPHA)</div>
             <div id="player-health-fill"></div>
         </div>
-        <div id="enemy-health-bar" class="health-container hidden">
-            <div class="health-label" style="right: 0;">ENEMY KAIJU</div>
+        <div id="enemy-health-bar" class="health-container">
+            <div class="health-label" style="right: 0;">ENEMY TITAN</div>
             <div id="enemy-health-fill"></div>
         </div>
         <div class="controls-hint">
-            [W A S D] Move | [MOUSE] Look/Aim<br>
-            [CLICK] Fire Beam | [ESC] Menu
+            [W A S D] Move &nbsp;|&nbsp; [MOUSE] Look<br>
+            [LEFT CLICK] Punch &nbsp;|&nbsp; [RIGHT CLICK] Atomic Breath
         </div>
     </div>
 
     <div id="start-screen" class="ui-layer">
-        <h1>PROJECT: KAIJU</h1>
-        <p>BROWSER BRAWL</p>
-        <p style="color: #F6D305;">DNA COINS: <span id="totalCoinsUI">0</span></p>
-        <div>
-            <button onclick="startGame()">FIGHT</button>
-            <button class="btn-shop" onclick="showShop()">UNLOCK MUTATIONS</button>
-        </div>
-    </div>
-
-    <div id="shop-screen" class="ui-layer hidden">
-        <h1 style="color: #F6D305;">MUTATION LAB</h1>
-        <p style="color: #F6D305;">COINS: <span id="shopCoinUI">0</span></p>
-        <div id="shop-content"></div>
-        <button onclick="showMenu()">BACK</button>
+        <h1>KAIJU WEB BRAWLER</h1>
+        <p>DAYTIME ARENA COMBAT</p>
+        <button onclick="startGame()">ENTER ARENA</button>
     </div>
 
     <script>
-        // --- SAVE DATA ---
-        let totalCoins = parseInt(localStorage.getItem("pk_coins")) || 0;
-        let unlockedKaijus = JSON.parse(localStorage.getItem("pk_unlocked")) || ["Gojira 1954"];
-        let equippedKaiju = localStorage.getItem("pk_equipped") || "Gojira 1954";
-        let gameState = "MENU";
-
-        function updateSave() {
-            localStorage.setItem("pk_coins", totalCoins);
-            localStorage.setItem("pk_unlocked", JSON.stringify(unlockedKaijus));
-            localStorage.setItem("pk_equipped", equippedKaiju);
-            document.getElementById("totalCoinsUI").innerText = totalCoins;
-            document.getElementById("shopCoinUI").innerText = totalCoins;
-        }
-
-        const kaijuDex = {
-            "Gojira 1954": { cost: 0, hp: 500, speed: 1.0, power: 25, color: 0x333333, beam: 0x0088ff, type: "brawler" },
-            "Mecha-Gojira": { cost: 500, hp: 400, speed: 1.5, power: 35, color: 0x888899, beam: 0xff0000, type: "ranged" },
-            "Shin Gojira": { cost: 1500, hp: 800, speed: 0.8, power: 60, color: 0x220505, beam: 0xaa00ff, type: "tank" }
-        };
-
-        // --- THREE.JS SETUP ---
+        // --- SCENE SETUP (Bright & Clear) ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111118);
-        scene.fog = new THREE.Fog(0x111118, 200, 800);
-
+        scene.background = new THREE.Color(0x87CEEB); // Bright blue sky
+        
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
-        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        scene.add(new THREE.AmbientLight(0x444455));
-        const dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
-        dirLight.position.set(100, 200, 50);
-        scene.add(dirLight);
+        // Bright Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+        sun.position.set(200, 500, 200);
+        scene.add(sun);
 
-        // Arena Ground
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 1 }));
+        // Arena Floor
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(1500, 1500), 
+            new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 1 })
+        );
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // Arena Walls
-        const wallGeo = new THREE.BoxGeometry(1000, 100, 20);
-        const wallMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-        const wall1 = new THREE.Mesh(wallGeo, wallMat); wall1.position.set(0, 50, -500); scene.add(wall1);
-        const wall2 = new THREE.Mesh(wallGeo, wallMat); wall2.position.set(0, 50, 500); scene.add(wall2);
-        const wall3 = new THREE.Mesh(wallGeo, wallMat); wall3.position.set(-500, 50, 0); wall3.rotation.y = Math.PI/2; scene.add(wall3);
-        const wall4 = new THREE.Mesh(wallGeo, wallMat); wall4.position.set(500, 50, 0); wall4.rotation.y = Math.PI/2; scene.add(wall4);
+        // --- GLOBAL VARIABLES ---
+        let gameState = "MENU";
+        let player, enemy, cameraPivot;
+        let playerHp = 1000, enemyHp = 1000;
+        let keys = { w: false, a: false, s: false, d: false };
+        let particles = [], beams = [];
+        let playerPunching = false, punchTimer = 0;
+        let breathCooldown = 0, enemyCooldown = 0;
 
-        // --- GAME VARIABLES ---
-        let buildings = []; let particles = []; let projectiles = []; 
-        let playerGroup, cameraPivot, playerStats;
-        let playerHp = 0; let enemyHp = 0;
-        let isFiring = false; let fireCooldown = 0;
-        let enemyGroup, enemyStats; let enemyActive = false; let enemyFireTimer = 0;
+        // --- KAIJU FACTORY ---
+        function createKaiju(colorHex, glowHex) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
+            const glow = new THREE.MeshBasicMaterial({ color: glowHex });
 
-        // --- BUILD KAIJU MODEL ---
-        function createKaijuMesh(stats, isEnemy = false) {
-            let group = new THREE.Group();
-            let mat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x661111 : stats.color, roughness: 0.7 });
-            let glowMat = new THREE.MeshBasicMaterial({ color: isEnemy ? 0xff4400 : stats.beam });
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(16, 24, 16), mat);
+            body.position.y = 12; group.add(body);
 
-            let body = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 12), mat);
-            body.position.y = 15; group.add(body);
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 12), mat);
+            head.position.set(0, 29, -4); group.add(head);
 
-            let head = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 8), mat);
-            head.position.set(0, 28, -6); group.add(head);
-
-            let tail = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 20), mat);
-            tail.position.set(0, 8, 12); group.add(tail);
+            // Tail
+            const tail = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 30), mat);
+            tail.position.set(0, 6, 15); group.add(tail);
 
             // Spikes
             for(let i=0; i<3; i++) {
-                let spike = new THREE.Mesh(new THREE.ConeGeometry(2, 8, 4), glowMat);
-                spike.position.set(0, 23 - (i*5), 4 + (i*4)); spike.rotation.x = -Math.PI/4;
+                let spike = new THREE.Mesh(new THREE.ConeGeometry(3, 10, 4), glow);
+                spike.position.set(0, 22 - (i*6), 6 + (i*4));
+                spike.rotation.x = -Math.PI/4;
                 group.add(spike);
             }
+
+            // Right Arm (For Punching)
+            const rightArm = new THREE.Group();
+            rightArm.position.set(10, 20, 0);
+            const armMesh = new THREE.Mesh(new THREE.BoxGeometry(6, 18, 6), mat);
+            armMesh.position.set(0, -6, 0); // Offset so it rotates from shoulder
+            rightArm.add(armMesh);
+            group.add(rightArm);
+            group.userData.arm = rightArm; // Store reference
+
             return group;
         }
 
-        // --- BUILD CITY ARENA ---
-        function generateArena() {
-            buildings.forEach(b => scene.remove(b.mesh)); buildings = [];
-            let bMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
-            
-            // Generate clustered blocks of buildings
-            for (let i = 0; i < 60; i++) {
-                let w = 15 + Math.random() * 20; let d = 15 + Math.random() * 20; let h = 30 + Math.random() * 60;
-                let x = (Math.random() - 0.5) * 800; let z = (Math.random() - 0.5) * 800;
-                
-                if (Math.abs(x) < 100 && Math.abs(z) < 100) continue; // Clear center
-                if (Math.abs(x) > 480 || Math.abs(z) > 480) continue; // Keep in walls
+        // --- INITIALIZE PLAYERS ---
+        player = createKaiju(0x222222, 0x0088ff);
+        scene.add(player);
 
-                let mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bMat);
-                mesh.position.set(x, h/2, z);
-                scene.add(mesh);
-                buildings.push({ mesh: mesh, hp: h });
-            }
+        enemy = createKaiju(0x661111, 0xffaa00);
+        scene.add(enemy);
+
+        // --- CAMERA SETUP (True 3rd Person) ---
+        cameraPivot = new THREE.Group();
+        cameraPivot.position.set(0, 25, 0); // Shoulder height
+        player.add(cameraPivot);
+        cameraPivot.add(camera);
+        camera.position.set(10, 15, 45); // Over the right shoulder, zoomed in
+        camera.lookAt(0, 5, -100);
+
+        // --- BUILDINGS (City) ---
+        let buildings = [];
+        for (let i = 0; i < 40; i++) {
+            let w = 20 + Math.random() * 30;
+            let d = 20 + Math.random() * 30;
+            let h = 40 + Math.random() * 80;
+            let mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: 0x888888 }));
+            let x = (Math.random() - 0.5) * 1000;
+            let z = (Math.random() - 0.5) * 1000;
+            if(Math.abs(x) < 100 && Math.abs(z) < 100) continue; // Clear center
+            mesh.position.set(x, h/2, z);
+            scene.add(mesh);
+            buildings.push({ mesh: mesh, hp: 100 });
         }
 
-        // --- INITIALIZATION ---
-        // Create Player
-        playerGroup = new THREE.Group(); scene.add(playerGroup);
-        // PERFECT CAMERA FIX: Attach camera directly to a pivot on the player
-        cameraPivot = new THREE.Group();
-        cameraPivot.position.set(0, 25, 0); // Pivot at shoulder height
-        playerGroup.add(cameraPivot);
-        cameraPivot.add(camera);
-        camera.position.set(0, 15, 60); // Solid distance behind
-        camera.lookAt(0, 0, -100); // Look forward
-
-        // Create Enemy
-        enemyGroup = new THREE.Group(); scene.add(enemyGroup);
-
         // --- CONTROLS ---
-        let keys = { w: false, a: false, s: false, d: false };
-        document.addEventListener('keydown', (e) => { if(gameState==="PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
-        document.addEventListener('keyup', (e) => { if(gameState==="PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
+        document.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
+        document.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
         
-        document.addEventListener('mousedown', (e) => { if(gameState==="PLAYING" && document.pointerLockElement === document.body && e.button === 0) isFiring = true; });
-        document.addEventListener('mouseup', () => isFiring = false);
+        document.addEventListener('mousedown', e => {
+            if(gameState !== "PLAYING" || document.pointerLockElement !== document.body) return;
+            if(e.button === 0 && !playerPunching) performPunch(player, true); // Left Click = Punch
+            if(e.button === 2 && breathCooldown <= 0) performBreath(player, 0x0088ff, true); // Right Click = Breath
+        });
         
-        document.addEventListener('mousemove', (e) => { 
+        document.addEventListener('contextmenu', e => e.preventDefault()); // Stop right-click menu
+
+        document.addEventListener('mousemove', e => { 
             if (document.pointerLockElement === document.body && gameState === "PLAYING") {
-                playerGroup.rotation.y -= e.movementX * 0.003;
-                // Look up/down slightly
-                cameraPivot.rotation.x -= e.movementY * 0.002;
-                // Clamp camera pitch
-                cameraPivot.rotation.x = Math.max(-0.5, Math.min(0.5, cameraPivot.rotation.x));
+                player.rotation.y -= e.movementX * 0.003;
+                cameraPivot.rotation.x -= e.movementY * 0.003;
+                cameraPivot.rotation.x = Math.max(-0.6, Math.min(0.6, cameraPivot.rotation.x)); // Clamp look up/down
             }
         });
 
-        document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== document.body && gameState === "PLAYING") showMenu(); });
-
-        // --- COMBAT & PHYSICS ---
-        function fireBeam(shooter, stats, isPlayer) {
-            let spawnPos = new THREE.Vector3(0, 28, -6); // Head position relative to Kaiju
-            shooter.localToWorld(spawnPos);
-            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(shooter.quaternion);
-
-            // Raycast for instant damage
-            let raycaster = new THREE.Raycaster(spawnPos, forward);
-            let targets = isPlayer ? [enemyGroup, ...buildings.map(b=>b.mesh)] : [playerGroup, ...buildings.map(b=>b.mesh)];
-            let intersects = raycaster.intersectObjects(targets, true);
-
-            let hitDist = 500;
-            if (intersects.length > 0) {
-                hitDist = intersects[0].distance;
-                let hitObj = intersects[0].object;
-                
-                // Determine what was hit
-                if (isPlayer && enemyActive && (hitObj === enemyGroup || hitObj.parent === enemyGroup)) {
-                    enemyHp -= stats.power;
-                    updateHealthUI();
-                } else if (!isPlayer && (hitObj === playerGroup || hitObj.parent === playerGroup)) {
-                    playerHp -= stats.power;
-                    updateHealthUI();
-                } else {
-                    // Hit building
-                    let b = buildings.find(bld => bld.mesh === hitObj);
-                    if(b) damageBuilding(b);
-                }
-            }
-
-            // Visual Beam
-            let mat = new THREE.MeshBasicMaterial({ color: isPlayer ? stats.beam : 0xff4400, transparent: true, opacity: 0.8 });
-            let beamGeo = new THREE.CylinderGeometry(2, 2, hitDist, 8);
-            beamGeo.translate(0, hitDist/2, 0); beamGeo.rotateX(Math.PI/2);
-            let beam = new THREE.Mesh(beamGeo, mat);
-            beam.position.copy(spawnPos); beam.quaternion.copy(shooter.quaternion);
+        // --- COMBAT LOGIC ---
+        function performPunch(attacker, isPlayer) {
+            attacker.userData.isPunching = true;
+            attacker.userData.punchTimer = 15;
             
-            // Adjust pitch if player is aiming up/down
-            if(isPlayer) {
-                let pitchQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), cameraPivot.rotation.x);
-                beam.quaternion.multiply(pitchQuat);
+            // Damage Check directly in front
+            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(attacker.quaternion);
+            let punchHitbox = attacker.position.clone().add(forward.multiplyScalar(20)); // Reach
+            
+            let target = isPlayer ? enemy : player;
+            if(target.position.distanceTo(punchHitbox) < 30) {
+                if(isPlayer) enemyHp -= 50; else playerHp -= 50;
+                spawnParticles(target.position, 0xff0000, 10);
+                updateUI();
             }
-
-            scene.add(beam);
-            setTimeout(() => scene.remove(beam), 50);
         }
 
-        function damageBuilding(b) {
-            b.hp -= 10;
-            b.mesh.material.color.setHex(0xffaa00);
-            setTimeout(() => { if(b.hp > 0) b.mesh.material.color.setHex(0x333333); }, 50);
-            if (b.hp <= 0 && b.mesh.visible) {
-                b.mesh.visible = false;
-                spawnParticles(b.mesh.position, 0x555555, 10);
-                if(Math.random() > 0.5) {
-                    // Give coins for destruction
-                    totalCoins += 5; updateSave();
-                }
+        function performBreath(attacker, color, isPlayer) {
+            if(isPlayer) breathCooldown = 40;
+            
+            let spawnPos = new THREE.Vector3(0, 30, -6);
+            attacker.localToWorld(spawnPos);
+            
+            let forward = new THREE.Vector3(0, 0, -1);
+            if(isPlayer) {
+                // Aim exactly where camera is looking
+                let camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+                forward.copy(camForward);
+            } else {
+                forward.applyQuaternion(attacker.quaternion);
             }
+
+            let dist = 600;
+            let target = isPlayer ? enemy : player;
+            
+            // Simple Raycast
+            let ray = new THREE.Raycaster(spawnPos, forward);
+            let hits = ray.intersectObjects([target.children[0], ...buildings.map(b=>b.mesh)]);
+            
+            if(hits.length > 0) {
+                dist = hits[0].distance;
+                let hitObj = hits[0].object;
+                
+                if(hitObj.parent === target) {
+                    if(isPlayer) enemyHp -= 80; else playerHp -= 80;
+                    updateUI();
+                } else {
+                    let b = buildings.find(x => x.mesh === hitObj);
+                    if(b) {
+                        b.hp -= 100;
+                        if(b.hp <= 0) { b.mesh.visible = false; spawnParticles(b.mesh.position, 0x888888, 20); }
+                    }
+                }
+                spawnParticles(hits[0].point, color, 15);
+            }
+
+            // Draw Beam
+            let beamGeo = new THREE.CylinderGeometry(4, 4, dist, 12);
+            beamGeo.translate(0, dist/2, 0); beamGeo.rotateX(Math.PI/2);
+            let beam = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.9 }));
+            beam.position.copy(spawnPos);
+            
+            // Aim beam
+            let lookPt = spawnPos.clone().add(forward);
+            beam.lookAt(lookPt);
+            
+            scene.add(beam);
+            beams.push({ mesh: beam, life: 5 });
         }
 
         function spawnParticles(pos, color, amt) {
             for(let i=0; i<amt; i++) {
-                let p = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshBasicMaterial({color: color}));
+                let p = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({color: color}));
                 p.position.copy(pos); scene.add(p);
-                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*10, vy: Math.random()*10 + 5, vz: (Math.random()-0.5)*10 });
+                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*12, vy: Math.random()*15, vz: (Math.random()-0.5)*12 });
             }
         }
 
-        function updateHealthUI() {
+        function updateUI() {
             if(playerHp < 0) playerHp = 0; if(enemyHp < 0) enemyHp = 0;
-            document.getElementById("player-health-fill").style.width = (playerHp / playerStats.hp * 100) + "%";
-            document.getElementById("enemy-health-fill").style.width = (enemyHp / enemyStats.hp * 100) + "%";
+            document.getElementById("player-health-fill").style.width = (playerHp / 1000 * 100) + "%";
+            document.getElementById("enemy-health-fill").style.width = (enemyHp / 1000 * 100) + "%";
             
-            if(playerHp <= 0) { alert("DEFEATED! Returning to menu."); showMenu(); }
-            if(enemyHp <= 0 && enemyActive) {
-                enemyActive = false; scene.remove(enemyGroup.children[0]); 
-                totalCoins += 150; updateSave();
-                document.getElementById("enemy-health-bar").classList.add("hidden");
-                alert("ENEMY DEFEATED! +150 COINS!");
-            }
+            if(playerHp <= 0) { document.exitPointerLock(); alert("YOU DIED!"); location.reload(); }
+            if(enemyHp <= 0) { enemy.position.set(0, -1000, 0); alert("ENEMY DEFEATED! YOU WIN!"); }
         }
 
-        // --- MAIN LOOP ---
+        // --- GAME LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            
             if (gameState === "PLAYING") {
-                // --- PLAYER MOVEMENT ---
-                if (fireCooldown > 0) fireCooldown--;
-                if (isFiring && fireCooldown <= 0) {
-                    fireBeam(playerGroup, playerStats, true);
-                    fireCooldown = 10; // Fire rate
-                }
+                
+                if(breathCooldown > 0) breathCooldown--;
 
+                // --- PLAYER MOVEMENT ---
+                let speed = 1.5;
                 let moveZ = Number(keys.s) - Number(keys.w);
                 let moveX = Number(keys.d) - Number(keys.a);
                 if (moveZ !== 0 || moveX !== 0) {
-                    let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
-                    let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(playerGroup.quaternion);
-                    
-                    // Simple collision checks (Keep inside walls)
-                    let nextPx = playerGroup.position.x + (forwardVec.x * moveZ + rightVec.x * moveX) * playerStats.speed;
-                    let nextPz = playerGroup.position.z + (forwardVec.z * moveZ + rightVec.z * moveX) * playerStats.speed;
-                    
-                    if(Math.abs(nextPx) < 480) playerGroup.position.x = nextPx;
-                    if(Math.abs(nextPz) < 480) playerGroup.position.z = nextPz;
-
-                    playerGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.05; // Wobble
+                    let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
+                    let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(player.quaternion);
+                    player.position.add(forwardVec.multiplyScalar(moveZ * speed));
+                    player.position.add(rightVec.multiplyScalar(moveX * speed));
+                    player.rotation.z = Math.sin(Date.now() * 0.01) * 0.03; // Walk wobble
                 } else {
-                    playerGroup.rotation.z = 0;
+                    player.rotation.z = 0;
                 }
 
-                // Stomp Buildings
-                buildings.forEach(b => {
-                    if (b.hp > 0 && Math.abs(b.mesh.position.x - playerGroup.position.x) < b.mesh.geometry.parameters.width/2 + 10 && 
-                        Math.abs(b.mesh.position.z - playerGroup.position.z) < b.mesh.geometry.parameters.depth/2 + 10) {
-                        damageBuilding(b); 
+                // --- ARM ANIMATIONS ---
+                [player, enemy].forEach(k => {
+                    if(k.userData.isPunching) {
+                        k.userData.punchTimer--;
+                        // Swing arm forward then back
+                        if(k.userData.punchTimer > 7) k.userData.arm.rotation.x -= 0.3;
+                        else k.userData.arm.rotation.x += 0.3;
+                        
+                        if(k.userData.punchTimer <= 0) {
+                            k.userData.isPunching = false;
+                            k.userData.arm.rotation.x = 0;
+                        }
                     }
                 });
 
-                // --- AI ENEMY LOGIC ---
-                if(enemyActive) {
-                    enemyFireTimer--;
-                    let dist = enemyGroup.position.distanceTo(playerGroup.position);
-                    
-                    // Look at player
-                    let targetPos = playerGroup.position.clone();
-                    targetPos.y = enemyGroup.position.y;
-                    enemyGroup.lookAt(targetPos);
+                // --- ENEMY AI ---
+                if(enemyHp > 0) {
+                    let dist = enemy.position.distanceTo(player.position);
+                    let targetPos = player.position.clone(); targetPos.y = enemy.position.y;
+                    enemy.lookAt(targetPos);
 
-                    // Move towards player if too far
-                    if(dist > 150) {
-                        enemyGroup.translateZ(enemyStats.speed * 0.8);
-                        enemyGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.05;
+                    if(dist > 40) {
+                        enemy.translateZ(1.2); // Walk forward
+                        enemy.rotation.z = Math.sin(Date.now() * 0.01) * 0.03;
                     } else {
-                        enemyGroup.rotation.z = 0;
+                        enemy.rotation.z = 0;
+                        // Punch if close
+                        if(!enemy.userData.isPunching && Math.random() < 0.05) performPunch(enemy, false);
                     }
 
-                    // Fire if close enough
-                    if(dist < 300 && enemyFireTimer <= 0) {
-                        fireBeam(enemyGroup, enemyStats, false);
-                        enemyFireTimer = 40; // Slower fire rate than player
+                    // Shoot Breath randomly if far
+                    enemyCooldown--;
+                    if(dist > 100 && dist < 400 && enemyCooldown <= 0 && Math.random() < 0.02) {
+                        performBreath(enemy, 0xffaa00, false);
+                        enemyCooldown = 60;
                     }
                 }
 
-                // Particles
+                // --- PHYSICS UPDATES ---
                 for (let i = particles.length - 1; i >= 0; i--) {
-                    let p = particles[i]; p.vy -= 0.5;
+                    let p = particles[i]; p.vy -= 0.8; // Gravity
                     p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz;
-                    p.life -= 0.05;
+                    p.life -= 0.03;
                     if (p.life <= 0 || p.mesh.position.y < 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+                }
+
+                for(let i = beams.length - 1; i >= 0; i--) {
+                    beams[i].life--;
+                    if(beams[i].life <= 0) { scene.remove(beams[i].mesh); beams.splice(i, 1); }
                 }
             }
             renderer.render(scene, camera);
         }
 
-        // --- MENUS ---
-        function hideAll() { document.querySelectorAll('.ui-layer, .hud').forEach(e => e.classList.add('hidden')); }
-        
-        function showMenu() { 
-            document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll(); 
-            document.getElementById("start-screen").classList.remove("hidden"); 
-            camera.position.set(0, 200, 400); camera.lookAt(0,0,0); 
-        }
-        
-        function showShop() {
-            hideAll(); document.getElementById("shop-screen").classList.remove("hidden"); let html = "";
-            for (let k in kaijuDex) {
-                let d = kaijuDex[k]; let isUn = unlockedKaijus.includes(k); let isEq = equippedKaiju === k;
-                let btn = isEq ? `<button class="buy-btn" style="background:#39ff14;color:#000;" disabled>EQUIPPED</button>` : 
-                          isUn ? `<button class="buy-btn" onclick="equip('${k}')">EQUIP</button>` : 
-                          `<button class="buy-btn" ${totalCoins >= d.cost ? '' : 'disabled'} onclick="buy('${k}', ${d.cost})">${d.cost} COINS</button>`;
-                html += `<div class="shop-item ${isEq ? 'equipped' : ''}">
-                            <h3 style="margin:0 0 10px 0; font-size:24px;">${k}</h3>
-                            <div style="font-size:18px; color:#aaa;">HP: ${d.hp} | POW: ${d.power}</div>
-                            ${btn}
-                         </div>`;
-            }
-            document.getElementById("shop-content").innerHTML = html;
-        }
-
-        function buy(k, cost) { if(totalCoins >= cost) { totalCoins -= cost; unlockedKaijus.push(k); equippedKaiju = k; updateSave(); showShop(); } }
-        function equip(k) { equippedKaiju = k; updateSave(); showShop(); }
-
+        // --- MENU LOGIC ---
         function startGame() {
             document.body.requestPointerLock();
-            hideAll(); document.getElementById("game-hud").classList.remove("hidden");
-            
-            gameState = "PLAYING"; 
-            generateArena();
-
-            // Setup Player
-            playerStats = kaijuDex[equippedKaiju];
-            playerHp = playerStats.hp;
-            while(playerGroup.children.length > 1){ playerGroup.remove(playerGroup.children[1]); } // Keep cameraPivot
-            playerGroup.add(createKaijuMesh(playerStats, false));
-            playerGroup.position.set(0, 0, 300);
-            playerGroup.rotation.set(0, 0, 0);
-
-            // Setup Enemy Bot
-            enemyActive = true;
-            enemyStats = kaijuDex["Mecha-Gojira"]; // Always fight Mecha for now
-            enemyHp = enemyStats.hp;
-            while(enemyGroup.children.length > 0){ enemyGroup.remove(enemyGroup.children[0]); }
-            enemyGroup.add(createKaijuMesh(enemyStats, true));
-            enemyGroup.position.set(0, 0, -300);
-            
-            document.getElementById("enemy-health-bar").classList.remove("hidden");
-            updateHealthUI();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            player.position.set(0, 0, 200); enemy.position.set(0, 0, -200);
+            gameState = "PLAYING";
         }
 
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-        updateSave(); showMenu(); animate();
+        document.addEventListener('pointerlockchange', () => { 
+            if (document.pointerLockElement !== document.body && gameState === "PLAYING") {
+                gameState = "MENU";
+                document.getElementById('start-screen').classList.remove('hidden');
+                document.getElementById('game-hud').classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+
+        animate();
     </script>
 </body>
 </html>

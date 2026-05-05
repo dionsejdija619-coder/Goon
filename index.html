@@ -3,477 +3,392 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Kaiju Simulator: Massive Scale</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <title>Project Kaiju: Browser Brawl</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Press Start 2P', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Teko', sans-serif; user-select: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); color: #fff; z-index: 10; backdrop-filter: blur(5px); }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10, 10, 15, 0.9); color: #fff; z-index: 10; }
         .hidden { display: none !important; }
         
-        h1 { font-size: 40px; margin: 0 0 15px 0; color: #fff; text-shadow: 4px 4px 0 #E52521, -2px -2px 0 #555; text-align: center; }
-        p { font-size: 14px; margin-bottom: 25px; color: #aaa; text-align: center; line-height: 1.5; }
+        h1 { font-size: 80px; margin: 0; color: #fff; text-shadow: 4px 4px 0 #E52521; text-transform: uppercase; letter-spacing: 2px; line-height: 1; }
+        p { font-size: 24px; margin-bottom: 25px; color: #aaa; }
         
-        .hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; color: #fff; font-size: 16px; pointer-events: none; z-index: 5; text-shadow: 2px 2px 0 #000; }
-        .hud-left { display: flex; flex-direction: column; gap: 10px; }
-        .hud-coins { color: #F6D305; font-size: 20px; text-shadow: 0 0 10px rgba(246, 211, 5, 0.5); }
+        .hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: none; z-index: 5; display: none; }
-        #crosshair::after { content: ''; position: absolute; top: 8px; left: 8px; width: 4px; height: 4px; background: rgba(255,0,0,0.8); border-radius: 50%; box-shadow: 0 0 5px red; }
+        /* Health Bars */
+        .health-container { position: absolute; top: 20px; width: 400px; height: 30px; background: #222; border: 3px solid #555; }
+        .health-fill { height: 100%; transition: width 0.1s; }
+        #player-health-bar { left: 20px; }
+        #player-health-fill { background: #39ff14; width: 100%; }
+        #enemy-health-bar { right: 20px; }
+        #enemy-health-fill { background: #E52521; width: 100%; float: right; }
+        .health-label { position: absolute; top: -25px; font-size: 24px; color: #fff; text-shadow: 2px 2px 0 #000; }
 
-        button { background: #000; color: #fff; border: 4px solid #fff; padding: 15px 25px; font-size: 16px; font-family: 'Press Start 2P', monospace; cursor: pointer; text-transform: uppercase; margin: 10px; box-shadow: 4px 4px 0 #555; transition: 0.1s; pointer-events: auto; }
-        button:hover { background: #fff; color: #000; box-shadow: 4px 4px 0 #E52521; transform: translateY(-2px); }
-        .btn-shop { border-color: #F6D305; color: #F6D305; box-shadow: 4px 4px 0 #A88F00; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; background: rgba(255, 255, 255, 0.8); border-radius: 50%; pointer-events: none; }
+
+        button { background: #111; color: #fff; border: 3px solid #fff; padding: 10px 30px; font-size: 24px; font-family: 'Teko', sans-serif; cursor: pointer; text-transform: uppercase; margin: 10px; transition: 0.2s; pointer-events: auto; }
+        button:hover { background: #E52521; border-color: #E52521; transform: scale(1.05); }
+        .btn-shop { border-color: #F6D305; color: #F6D305; }
         .btn-shop:hover { background: #F6D305; color: #000; }
         
-        #shop-content { display: flex; gap: 20px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; width: 90%; max-width: 800px; }
-        .shop-item { background: #111; border: 4px solid #555; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 12px; width: 200px; text-align: center; }
-        .shop-item.equipped { border-color: #39ff14; background: #1a221a; box-shadow: inset 0 0 20px rgba(57, 255, 20, 0.2); }
-        .buy-btn { font-size: 12px; padding: 10px 15px; margin: 0; width: 100%; }
+        #shop-content { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; width: 90%; max-width: 800px; }
+        .shop-item { background: #1a1a1a; border: 3px solid #444; padding: 15px; width: 220px; text-align: center; }
+        .shop-item.equipped { border-color: #39ff14; }
+        .buy-btn { font-size: 20px; padding: 5px 10px; width: 100%; margin-top: 10px; }
+
+        .controls-hint { position: absolute; bottom: 20px; left: 20px; color: #fff; font-size: 20px; text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.5); padding: 10px; }
     </style>
 </head>
 <body>
-    <div id="crosshair"></div>
-    <div class="hud hidden" id="game-hud">
-        <div class="hud-left">
-            <div>CITY DESTROYED: <span id="scoreUI">0</span></div>
-            <div class="hud-coins">COINS: <span id="coinUI">0</span></div>
+    <div id="game-hud" class="hud hidden">
+        <div id="crosshair"></div>
+        <div id="player-health-bar" class="health-container">
+            <div class="health-label" style="left: 0;">YOU</div>
+            <div id="player-health-fill"></div>
         </div>
-        <div style="text-align: right; font-size: 10px; color: #aaa; line-height: 1.5; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #333;">
-            [ESC] TO PAUSE/SHOP<br><br>
-            [MOUSE] LOOK AROUND<br>
-            [W A S D] TO WALK<br>
-            [L-CLICK] PRIMARY ABILITY<br>
-            [R-CLICK] SECONDARY ABILITY
+        <div id="enemy-health-bar" class="health-container hidden">
+            <div class="health-label" style="right: 0;">ENEMY KAIJU</div>
+            <div id="enemy-health-fill"></div>
+        </div>
+        <div class="controls-hint">
+            [W A S D] Move | [MOUSE] Look/Aim<br>
+            [CLICK] Fire Beam | [ESC] Menu
         </div>
     </div>
 
     <div id="start-screen" class="ui-layer">
-        <h1>3D KAIJU<br>SIMULATOR</h1>
-        <p>Total DNA Coins: <span id="totalCoinsUI" style="color:#F6D305;">0</span></p>
+        <h1>PROJECT: KAIJU</h1>
+        <p>BROWSER BRAWL</p>
+        <p style="color: #F6D305;">DNA COINS: <span id="totalCoinsUI">0</span></p>
         <div>
-            <button onclick="startGame()">ENTER CITY</button>
-            <button class="btn-shop" onclick="showShop()">DNA LAB</button>
+            <button onclick="startGame()">FIGHT</button>
+            <button class="btn-shop" onclick="showShop()">UNLOCK MUTATIONS</button>
         </div>
     </div>
 
     <div id="shop-screen" class="ui-layer hidden">
-        <h2 style="color: #F6D305; margin: 0 0 15px 0; text-shadow: 2px 2px 0 #000;">DNA LAB</h2>
+        <h1 style="color: #F6D305;">MUTATION LAB</h1>
         <p style="color: #F6D305;">COINS: <span id="shopCoinUI">0</span></p>
         <div id="shop-content"></div>
-        <button onclick="showMenu()">BACK TO MENU</button>
+        <button onclick="showMenu()">BACK</button>
     </div>
 
     <script>
         // --- SAVE DATA ---
-        let totalCoins = parseInt(localStorage.getItem("k3d_real_coins")) || 0;
-        let unlockedKaijus = JSON.parse(localStorage.getItem("k3d_real_unlocked")) || ["Gojira 1954"];
-        let equippedKaiju = localStorage.getItem("k3d_real_equipped") || "Gojira 1954";
-        let runCoins = 0; let score = 0; let gameState = "MENU";
+        let totalCoins = parseInt(localStorage.getItem("pk_coins")) || 0;
+        let unlockedKaijus = JSON.parse(localStorage.getItem("pk_unlocked")) || ["Gojira 1954"];
+        let equippedKaiju = localStorage.getItem("pk_equipped") || "Gojira 1954";
+        let gameState = "MENU";
 
         function updateSave() {
-            localStorage.setItem("k3d_real_coins", totalCoins);
-            localStorage.setItem("k3d_real_unlocked", JSON.stringify(unlockedKaijus));
-            localStorage.setItem("k3d_real_equipped", equippedKaiju);
+            localStorage.setItem("pk_coins", totalCoins);
+            localStorage.setItem("pk_unlocked", JSON.stringify(unlockedKaijus));
+            localStorage.setItem("pk_equipped", equippedKaiju);
             document.getElementById("totalCoinsUI").innerText = totalCoins;
             document.getElementById("shopCoinUI").innerText = totalCoins;
         }
 
         const kaijuDex = {
-            "Gojira 1954": { cost: 0, speed: 2.0, power: 30, color: 0x222222, metal: 0.1, rough: 0.8, beamColor: 0x0088ff, type: "classic", desc: "L: Atomic Ray | R: Nuclear Pulse" },
-            "Mecha-Gojira": { cost: 300, speed: 3.5, power: 45, color: 0x888899, metal: 0.9, rough: 0.3, beamColor: 0xff0000, type: "mech", desc: "L: Finger Missiles | R: Chest Cannon" },
-            "Shin Gojira": { cost: 800, speed: 1.5, power: 120, color: 0x1a0505, metal: 0.2, rough: 0.5, beamColor: 0xaa00ff, type: "shin", desc: "L: Photon Ray | R: Dorsal Lasers" }
+            "Gojira 1954": { cost: 0, hp: 500, speed: 1.0, power: 25, color: 0x333333, beam: 0x0088ff, type: "brawler" },
+            "Mecha-Gojira": { cost: 500, hp: 400, speed: 1.5, power: 35, color: 0x888899, beam: 0xff0000, type: "ranged" },
+            "Shin Gojira": { cost: 1500, hp: 800, speed: 0.8, power: 60, color: 0x220505, beam: 0xaa00ff, type: "tank" }
         };
 
         // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020205);
-        scene.fog = new THREE.FogExp2(0x020205, 0.001); // Thinner fog so you can see further
+        scene.background = new THREE.Color(0x111118);
+        scene.fog = new THREE.Fog(0x111118, 200, 800);
 
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2500);
-        
-        // Removed heavy shadow maps to kill lag
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Simple Lighting (No Lag)
-        const ambientLight = new THREE.AmbientLight(0x222233, 1.5);
-        scene.add(ambientLight);
-        
-        const moonLight = new THREE.DirectionalLight(0xaaccff, 1.2);
-        moonLight.position.set(200, 300, 200);
-        scene.add(moonLight);
+        // Lighting
+        scene.add(new THREE.AmbientLight(0x444455));
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+        dirLight.position.set(100, 200, 50);
+        scene.add(dirLight);
 
-        // Ground
-        const groundGeo = new THREE.PlaneGeometry(5000, 5000);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.9 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
+        // Arena Ground
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 1 }));
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // --- PROCEDURAL BUILDING TEXTURE ---
-        function createBuildingTexture() {
-            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, 0, 128, 256);
-            for(let x=5; x<120; x+=15) {
-                for(let y=5; y<250; y+=20) {
-                    if(Math.random() > 0.4) {
-                        ctx.fillStyle = Math.random() > 0.8 ? '#ffffaa' : '#222233';
-                        ctx.fillRect(x, y, 8, 12);
-                    }
-                }
+        // Arena Walls
+        const wallGeo = new THREE.BoxGeometry(1000, 100, 20);
+        const wallMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        const wall1 = new THREE.Mesh(wallGeo, wallMat); wall1.position.set(0, 50, -500); scene.add(wall1);
+        const wall2 = new THREE.Mesh(wallGeo, wallMat); wall2.position.set(0, 50, 500); scene.add(wall2);
+        const wall3 = new THREE.Mesh(wallGeo, wallMat); wall3.position.set(-500, 50, 0); wall3.rotation.y = Math.PI/2; scene.add(wall3);
+        const wall4 = new THREE.Mesh(wallGeo, wallMat); wall4.position.set(500, 50, 0); wall4.rotation.y = Math.PI/2; scene.add(wall4);
+
+        // --- GAME VARIABLES ---
+        let buildings = []; let particles = []; let projectiles = []; 
+        let playerGroup, cameraPivot, playerStats;
+        let playerHp = 0; let enemyHp = 0;
+        let isFiring = false; let fireCooldown = 0;
+        let enemyGroup, enemyStats; let enemyActive = false; let enemyFireTimer = 0;
+
+        // --- BUILD KAIJU MODEL ---
+        function createKaijuMesh(stats, isEnemy = false) {
+            let group = new THREE.Group();
+            let mat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x661111 : stats.color, roughness: 0.7 });
+            let glowMat = new THREE.MeshBasicMaterial({ color: isEnemy ? 0xff4400 : stats.beam });
+
+            let body = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 12), mat);
+            body.position.y = 15; group.add(body);
+
+            let head = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 8), mat);
+            head.position.set(0, 28, -6); group.add(head);
+
+            let tail = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 20), mat);
+            tail.position.set(0, 8, 12); group.add(tail);
+
+            // Spikes
+            for(let i=0; i<3; i++) {
+                let spike = new THREE.Mesh(new THREE.ConeGeometry(2, 8, 4), glowMat);
+                spike.position.set(0, 23 - (i*5), 4 + (i*4)); spike.rotation.x = -Math.PI/4;
+                group.add(spike);
             }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            return tex;
-        }
-        const buildingTex = createBuildingTexture();
-        const bMatBase = new THREE.MeshStandardMaterial({ map: buildingTex, roughness: 0.8, metalness: 0.1 });
-
-        // --- PLAYER (THIRD PERSON) ---
-        let playerGroup = new THREE.Group();
-        scene.add(playerGroup);
-
-        function buildKaijuModel() {
-            while(playerGroup.children.length > 0){ playerGroup.remove(playerGroup.children[0]); }
-            
-            let stats = kaijuDex[equippedKaiju];
-            let mat = new THREE.MeshStandardMaterial({ color: stats.color, metalness: stats.metal, roughness: stats.rough });
-            let spikeMat = new THREE.MeshBasicMaterial({ color: stats.beamColor }); // Basic material avoids lighting lag
-
-            let bodyGeo = new THREE.BoxGeometry(12, 24, 16); let body = new THREE.Mesh(bodyGeo, mat);
-            body.position.y = 15; playerGroup.add(body);
-
-            let headGeo = new THREE.BoxGeometry(8, 8, 12); let head = new THREE.Mesh(headGeo, mat);
-            head.position.set(0, 30, -8); playerGroup.add(head);
-
-            let tailGeo = new THREE.BoxGeometry(8, 6, 25); let tail = new THREE.Mesh(tailGeo, mat);
-            tail.position.set(0, 8, 18); playerGroup.add(tail);
-
-            let legGeo = new THREE.BoxGeometry(6, 15, 8);
-            let legL = new THREE.Mesh(legGeo, mat); legL.position.set(-8, 7.5, 0); playerGroup.add(legL);
-            let legR = new THREE.Mesh(legGeo, mat); legR.position.set(8, 7.5, 0); playerGroup.add(legR);
-
-            for(let i=0; i<4; i++) {
-                let spikeGeo = new THREE.ConeGeometry(3, 10, 4);
-                let spike = new THREE.Mesh(spikeGeo, spikeMat);
-                spike.position.set(0, 25 - (i*5), 6 + (i*4)); spike.rotation.x = -Math.PI/4;
-                playerGroup.add(spike);
-            }
-
-            // Make the Kaiju massive!
-            playerGroup.scale.set(3, 3, 3);
+            return group;
         }
 
-        // --- GAME OBJECTS ---
-        let buildings = []; let particles = []; let projectiles = []; let coins = [];
-
-        function generateCity() {
+        // --- BUILD CITY ARENA ---
+        function generateArena() {
             buildings.forEach(b => scene.remove(b.mesh)); buildings = [];
-            coins.forEach(c => scene.remove(c.mesh)); coins = [];
+            let bMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
             
-            const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
-
-            for (let i = 0; i < 400; i++) {
-                // Smaller buildings relative to Kaiju
-                let w = 20 + Math.random() * 30; let d = 20 + Math.random() * 30; 
-                let h = 20 + Math.random() * 80; // Shorter on average
-                if(Math.random() > 0.9) h += 80; // Occasional skyscraper
+            // Generate clustered blocks of buildings
+            for (let i = 0; i < 60; i++) {
+                let w = 15 + Math.random() * 20; let d = 15 + Math.random() * 20; let h = 30 + Math.random() * 60;
+                let x = (Math.random() - 0.5) * 800; let z = (Math.random() - 0.5) * 800;
                 
-                let x = (Math.random() - 0.5) * 1600; let z = (Math.random() - 0.5) * 1600;
-                if (Math.abs(x) < 120 && Math.abs(z) < 120) continue; // Clear spawn
+                if (Math.abs(x) < 100 && Math.abs(z) < 100) continue; // Clear center
+                if (Math.abs(x) > 480 || Math.abs(z) > 480) continue; // Keep in walls
 
-                let bMat = bMatBase.clone();
-                bMat.map = buildingTex.clone(); bMat.map.needsUpdate = true;
-                bMat.map.repeat.set(w/30, h/30); 
-
-                let mesh = new THREE.Mesh(buildingGeo, bMat);
-                mesh.position.set(x, h/2, z); mesh.scale.set(w, h, d);
+                let mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bMat);
+                mesh.position.set(x, h/2, z);
                 scene.add(mesh);
-                buildings.push({ mesh: mesh, hp: w * h / 50, maxHp: w * h / 50, h: h, w: w, d: d });
+                buildings.push({ mesh: mesh, hp: h });
             }
         }
 
-        // --- CONTROLS & PHYSICS ---
-        let keys = { w: false, a: false, s: false, d: false }; let direction = new THREE.Vector3();
-        let isFiring = false; let fireCooldown = 0; let fireCooldownRight = 0; let camShake = 0;
+        // --- INITIALIZATION ---
+        // Create Player
+        playerGroup = new THREE.Group(); scene.add(playerGroup);
+        // PERFECT CAMERA FIX: Attach camera directly to a pivot on the player
+        cameraPivot = new THREE.Group();
+        cameraPivot.position.set(0, 25, 0); // Pivot at shoulder height
+        playerGroup.add(cameraPivot);
+        cameraPivot.add(camera);
+        camera.position.set(0, 15, 60); // Solid distance behind
+        camera.lookAt(0, 0, -100); // Look forward
 
-        document.addEventListener('keydown', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
-        document.addEventListener('keyup', (e) => { if(gameState === "PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
+        // Create Enemy
+        enemyGroup = new THREE.Group(); scene.add(enemyGroup);
+
+        // --- CONTROLS ---
+        let keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => { if(gameState==="PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
+        document.addEventListener('keyup', (e) => { if(gameState==="PLAYING" && keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
         
-        document.addEventListener('mousedown', (e) => { 
-            if(gameState !== "PLAYING" || document.pointerLockElement !== document.body) return;
-            if(e.button === 0) isFiring = true; 
-            if(e.button === 2) fireSecondaryAbility(); 
+        document.addEventListener('mousedown', (e) => { if(gameState==="PLAYING" && document.pointerLockElement === document.body && e.button === 0) isFiring = true; });
+        document.addEventListener('mouseup', () => isFiring = false);
+        
+        document.addEventListener('mousemove', (e) => { 
+            if (document.pointerLockElement === document.body && gameState === "PLAYING") {
+                playerGroup.rotation.y -= e.movementX * 0.003;
+                // Look up/down slightly
+                cameraPivot.rotation.x -= e.movementY * 0.002;
+                // Clamp camera pitch
+                cameraPivot.rotation.x = Math.max(-0.5, Math.min(0.5, cameraPivot.rotation.x));
+            }
         });
-        document.addEventListener('mouseup', (e) => { if(e.button === 0) isFiring = false; });
-        document.addEventListener('contextmenu', e => e.preventDefault()); // Stop right-click menu
 
-        document.addEventListener('mousemove', (e) => { if (document.pointerLockElement === document.body && gameState === "PLAYING") playerGroup.rotation.y -= e.movementX * 0.003; });
-        document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== document.body && gameState === "PLAYING") { totalCoins += runCoins; updateSave(); showMenu(); }});
+        document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement !== document.body && gameState === "PLAYING") showMenu(); });
 
-        // --- OPTIMIZED ABILITIES ---
-        function fireAbility() {
-            let stats = kaijuDex[equippedKaiju];
-            let spawnPos = playerGroup.position.clone(); spawnPos.y += 90; // Scaled head height
-            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
-            
-            if (stats.type === "classic" && fireCooldown <= 0) {
-                // Raycast Continuous Atomic Ray (No lag)
-                camShake = 1;
-                let raycaster = new THREE.Raycaster(spawnPos, forward);
-                let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
+        // --- COMBAT & PHYSICS ---
+        function fireBeam(shooter, stats, isPlayer) {
+            let spawnPos = new THREE.Vector3(0, 28, -6); // Head position relative to Kaiju
+            shooter.localToWorld(spawnPos);
+            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(shooter.quaternion);
+
+            // Raycast for instant damage
+            let raycaster = new THREE.Raycaster(spawnPos, forward);
+            let targets = isPlayer ? [enemyGroup, ...buildings.map(b=>b.mesh)] : [playerGroup, ...buildings.map(b=>b.mesh)];
+            let intersects = raycaster.intersectObjects(targets, true);
+
+            let hitDist = 500;
+            if (intersects.length > 0) {
+                hitDist = intersects[0].distance;
+                let hitObj = intersects[0].object;
                 
-                let dist = 800;
-                if(intersects.length > 0) {
-                    dist = intersects[0].distance;
-                    let b = buildings.find(bld => bld.mesh === intersects[0].object);
-                    if(b) damageBuilding(b, stats.power);
+                // Determine what was hit
+                if (isPlayer && enemyActive && (hitObj === enemyGroup || hitObj.parent === enemyGroup)) {
+                    enemyHp -= stats.power;
+                    updateHealthUI();
+                } else if (!isPlayer && (hitObj === playerGroup || hitObj.parent === playerGroup)) {
+                    playerHp -= stats.power;
+                    updateHealthUI();
+                } else {
+                    // Hit building
+                    let b = buildings.find(bld => bld.mesh === hitObj);
+                    if(b) damageBuilding(b);
                 }
-
-                // Draw visual cylinder
-                let cylGeo = new THREE.CylinderGeometry(2, 6, dist, 8);
-                cylGeo.translate(0, dist/2, 0); // Pivot at start
-                cylGeo.rotateX(Math.PI/2); // Face Z
-                let cyl = new THREE.Mesh(cylGeo, new THREE.MeshBasicMaterial({color: stats.beamColor, transparent: true, opacity: 0.8}));
-                cyl.position.copy(spawnPos);
-                cyl.quaternion.copy(playerGroup.quaternion);
-                scene.add(cyl);
-                setTimeout(() => scene.remove(cyl), 50); // Flash quickly
-
-                fireCooldown = 5;
-            } 
-            else if (stats.type === "mech" && fireCooldown <= 0) {
-                // Fast low-poly missiles
-                camShake = 0.5;
-                let proj = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 15, 6), new THREE.MeshBasicMaterial({color: stats.beamColor}));
-                proj.position.copy(spawnPos); 
-                proj.position.x += (Math.random()-0.5)*20; // Spread from fingers
-                proj.quaternion.copy(playerGroup.quaternion); proj.rotateX(Math.PI/2);
-                scene.add(proj);
-                projectiles.push({mesh: proj, vel: forward.clone().multiplyScalar(20), life: 40, power: stats.power});
-                fireCooldown = 6;
             }
-            else if (stats.type === "shin" && fireCooldown <= 0) {
-                // Instant Piercing Raycast
-                camShake = 3;
-                let raycaster = new THREE.Raycaster(spawnPos, forward);
-                let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
-                
-                const mat = new THREE.LineBasicMaterial({ color: stats.beamColor, linewidth: 5 });
-                const pts = [spawnPos, spawnPos.clone().add(forward.clone().multiplyScalar(1500))];
-                const geo = new THREE.BufferGeometry().setFromPoints(pts);
-                const line = new THREE.Line(geo, mat);
-                scene.add(line);
-                setTimeout(() => scene.remove(line), 100);
 
-                intersects.forEach(hit => {
-                    let b = buildings.find(bld => bld.mesh === hit.object);
-                    if(b) damageBuilding(b, stats.power * 2);
-                });
-                fireCooldown = 30; // Overheat
+            // Visual Beam
+            let mat = new THREE.MeshBasicMaterial({ color: isPlayer ? stats.beam : 0xff4400, transparent: true, opacity: 0.8 });
+            let beamGeo = new THREE.CylinderGeometry(2, 2, hitDist, 8);
+            beamGeo.translate(0, hitDist/2, 0); beamGeo.rotateX(Math.PI/2);
+            let beam = new THREE.Mesh(beamGeo, mat);
+            beam.position.copy(spawnPos); beam.quaternion.copy(shooter.quaternion);
+            
+            // Adjust pitch if player is aiming up/down
+            if(isPlayer) {
+                let pitchQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), cameraPivot.rotation.x);
+                beam.quaternion.multiply(pitchQuat);
             }
+
+            scene.add(beam);
+            setTimeout(() => scene.remove(beam), 50);
         }
 
-        function fireSecondaryAbility() {
-            let stats = kaijuDex[equippedKaiju];
-            if(fireCooldownRight > 0) return;
-
-            let spawnPos = playerGroup.position.clone();
-            
-            if (stats.type === "classic") {
-                // Nuclear Pulse (AoE explosion)
-                camShake = 8;
-                let sphereGeo = new THREE.SphereGeometry(150, 16, 16);
-                let sphere = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({color: stats.beamColor, wireframe: true, transparent: true, opacity: 0.5}));
-                sphere.position.copy(spawnPos); scene.add(sphere);
-                
-                let scale = 0;
-                let pulseAnim = setInterval(() => {
-                    scale += 0.1; sphere.scale.set(scale, scale, scale);
-                    if(scale > 1) { clearInterval(pulseAnim); scene.remove(sphere); }
-                }, 16);
-
-                buildings.forEach(b => {
-                    if(b.hp > 0 && b.mesh.position.distanceTo(spawnPos) < 150) damageBuilding(b, stats.power * 5);
-                });
-                fireCooldownRight = 100;
-            }
-            else if (stats.type === "mech") {
-                // Chest Cannon (Massive Cylinder)
-                camShake = 5;
-                spawnPos.y += 45; // Chest height
-                let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
-                
-                let cylGeo = new THREE.CylinderGeometry(15, 15, 1000, 12);
-                cylGeo.translate(0, 500, 0); cylGeo.rotateX(Math.PI/2);
-                let cyl = new THREE.Mesh(cylGeo, new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 0.9}));
-                cyl.position.copy(spawnPos); cyl.quaternion.copy(playerGroup.quaternion);
-                scene.add(cyl);
-                setTimeout(() => scene.remove(cyl), 300);
-
-                let raycaster = new THREE.Raycaster(spawnPos, forward);
-                raycaster.params.Line.threshold = 15; // Thick ray
-                let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
-                intersects.forEach(hit => {
-                    let b = buildings.find(bld => bld.mesh === hit.object);
-                    if(b) damageBuilding(b, stats.power * 4);
-                });
-                fireCooldownRight = 120;
-            }
-            else if (stats.type === "shin") {
-                // Dorsal Lasers (Omnidirectional array)
-                camShake = 6;
-                spawnPos.y += 75; // Back height
-                
-                for(let i=0; i<15; i++) {
-                    // Random upward/forward arc
-                    let dir = new THREE.Vector3((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2).normalize();
-                    let raycaster = new THREE.Raycaster(spawnPos, dir);
-                    let intersects = raycaster.intersectObjects(buildings.map(b => b.mesh));
-                    
-                    const mat = new THREE.LineBasicMaterial({ color: stats.beamColor });
-                    const pts = [spawnPos, spawnPos.clone().add(dir.multiplyScalar(800))];
-                    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-                    const line = new THREE.Line(geo, mat);
-                    scene.add(line);
-                    setTimeout(() => scene.remove(line), 200);
-
-                    intersects.forEach(hit => {
-                        let b = buildings.find(bld => bld.mesh === hit.object);
-                        if(b) damageBuilding(b, stats.power * 3);
-                    });
-                }
-                fireCooldownRight = 150;
-            }
-        }
-
-        function damageBuilding(b, amount) {
-            b.hp -= amount;
-            b.mesh.material.emissive.setHex(0xffaa00);
-            setTimeout(() => { if(b.hp > 0) b.mesh.material.emissive.setHex(0x000000); }, 100);
-
+        function damageBuilding(b) {
+            b.hp -= 10;
+            b.mesh.material.color.setHex(0xffaa00);
+            setTimeout(() => { if(b.hp > 0) b.mesh.material.color.setHex(0x333333); }, 50);
             if (b.hp <= 0 && b.mesh.visible) {
                 b.mesh.visible = false;
-                score++; document.getElementById("scoreUI").innerText = score;
-                
-                spawnParticles(b.mesh.position, 0xff5500, 5, true); // Fire (low count)
-                spawnParticles(b.mesh.position, 0x222222, 10, false); // Debris (low count)
-                
-                let amt = Math.floor(b.maxHp / 20) + 1;
-                for(let i=0; i<amt; i++) {
-                    let cmesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({color: 0xF6D305}));
-                    cmesh.position.copy(b.mesh.position); cmesh.position.y = 5;
-                    cmesh.position.x += (Math.random()-0.5)*40; cmesh.position.z += (Math.random()-0.5)*40;
-                    scene.add(cmesh); coins.push({mesh: cmesh});
+                spawnParticles(b.mesh.position, 0x555555, 10);
+                if(Math.random() > 0.5) {
+                    // Give coins for destruction
+                    totalCoins += 5; updateSave();
                 }
             }
         }
 
-        function spawnParticles(pos, color, amt, glow) {
-            let mat = glow ? 
-                new THREE.MeshBasicMaterial({color: color}) : 
-                new THREE.MeshBasicMaterial({color: color}); // Basic materials = no light lag
-            
+        function spawnParticles(pos, color, amt) {
             for(let i=0; i<amt; i++) {
-                let s = Math.random() * 8 + 4;
-                let p = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), mat);
-                p.position.copy(pos);
-                scene.add(p);
-                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*8, vy: Math.random()*10 + 5, vz: (Math.random()-0.5)*8 });
+                let p = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshBasicMaterial({color: color}));
+                p.position.copy(pos); scene.add(p);
+                particles.push({ mesh: p, life: 1.0, vx: (Math.random()-0.5)*10, vy: Math.random()*10 + 5, vz: (Math.random()-0.5)*10 });
             }
         }
 
-        // --- GAME LOOP ---
+        function updateHealthUI() {
+            if(playerHp < 0) playerHp = 0; if(enemyHp < 0) enemyHp = 0;
+            document.getElementById("player-health-fill").style.width = (playerHp / playerStats.hp * 100) + "%";
+            document.getElementById("enemy-health-fill").style.width = (enemyHp / enemyStats.hp * 100) + "%";
+            
+            if(playerHp <= 0) { alert("DEFEATED! Returning to menu."); showMenu(); }
+            if(enemyHp <= 0 && enemyActive) {
+                enemyActive = false; scene.remove(enemyGroup.children[0]); 
+                totalCoins += 150; updateSave();
+                document.getElementById("enemy-health-bar").classList.add("hidden");
+                alert("ENEMY DEFEATED! +150 COINS!");
+            }
+        }
+
+        // --- MAIN LOOP ---
         function animate() {
             requestAnimationFrame(animate);
             
             if (gameState === "PLAYING") {
-                let stats = kaijuDex[equippedKaiju];
+                // --- PLAYER MOVEMENT ---
                 if (fireCooldown > 0) fireCooldown--;
-                if (fireCooldownRight > 0) fireCooldownRight--;
-                if (isFiring) fireAbility();
-
-                direction.z = Number(keys.s) - Number(keys.w);
-                direction.x = Number(keys.d) - Number(keys.a);
-                direction.normalize();
-
-                if (direction.z !== 0 || direction.x !== 0) {
-                    let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(playerGroup.quaternion);
-                    let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
-                    playerGroup.position.add(forwardVec.multiplyScalar(direction.z * stats.speed));
-                    playerGroup.position.add(rightVec.multiplyScalar(direction.x * stats.speed));
-                    playerGroup.rotation.z = Math.sin(Date.now() * 0.005) * 0.05; // Slower, heavier walk wobble
-                    
-                    if(Math.random() < 0.02) camShake = 2; // Heavy Stomp shake
-                } else { playerGroup.rotation.z = 0; }
-
-                // Cinematic Camera Follow (Scaled up)
-                let cameraOffset = new THREE.Vector3(0, 150, 300); // Higher and further back
-                cameraOffset.applyMatrix4(playerGroup.matrixWorld);
-                camera.position.lerp(cameraOffset, 0.08); 
-                
-                let lookTarget = playerGroup.position.clone(); lookTarget.y += 80; 
-                camera.lookAt(lookTarget);
-
-                if(camShake > 0) {
-                    camera.position.x += (Math.random()-0.5)*camShake;
-                    camera.position.y += (Math.random()-0.5)*camShake;
-                    camShake *= 0.8;
-                    if(camShake < 0.1) camShake = 0;
+                if (isFiring && fireCooldown <= 0) {
+                    fireBeam(playerGroup, playerStats, true);
+                    fireCooldown = 10; // Fire rate
                 }
 
-                // Collisions (Scaled up bounding boxes)
-                let px = playerGroup.position.x; let pz = playerGroup.position.z;
+                let moveZ = Number(keys.s) - Number(keys.w);
+                let moveX = Number(keys.d) - Number(keys.a);
+                if (moveZ !== 0 || moveX !== 0) {
+                    let forwardVec = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
+                    let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(playerGroup.quaternion);
+                    
+                    // Simple collision checks (Keep inside walls)
+                    let nextPx = playerGroup.position.x + (forwardVec.x * moveZ + rightVec.x * moveX) * playerStats.speed;
+                    let nextPz = playerGroup.position.z + (forwardVec.z * moveZ + rightVec.z * moveX) * playerStats.speed;
+                    
+                    if(Math.abs(nextPx) < 480) playerGroup.position.x = nextPx;
+                    if(Math.abs(nextPz) < 480) playerGroup.position.z = nextPz;
+
+                    playerGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.05; // Wobble
+                } else {
+                    playerGroup.rotation.z = 0;
+                }
+
+                // Stomp Buildings
                 buildings.forEach(b => {
-                    if (b.hp > 0 && Math.abs(b.mesh.position.x - px) < b.w/2 + 25 && Math.abs(b.mesh.position.z - pz) < b.d/2 + 25) damageBuilding(b, stats.power * 0.5); 
+                    if (b.hp > 0 && Math.abs(b.mesh.position.x - playerGroup.position.x) < b.mesh.geometry.parameters.width/2 + 10 && 
+                        Math.abs(b.mesh.position.z - playerGroup.position.z) < b.mesh.geometry.parameters.depth/2 + 10) {
+                        damageBuilding(b); 
+                    }
                 });
 
-                for (let i = coins.length - 1; i >= 0; i--) {
-                    let c = coins[i]; c.mesh.rotation.y += 0.05; c.mesh.rotation.x += 0.05;
-                    if (playerGroup.position.distanceTo(c.mesh.position) < 80) { // Bigger magnet radius
-                        runCoins++; document.getElementById("coinUI").innerText = runCoins;
-                        scene.remove(c.mesh); coins.splice(i, 1);
+                // --- AI ENEMY LOGIC ---
+                if(enemyActive) {
+                    enemyFireTimer--;
+                    let dist = enemyGroup.position.distanceTo(playerGroup.position);
+                    
+                    // Look at player
+                    let targetPos = playerGroup.position.clone();
+                    targetPos.y = enemyGroup.position.y;
+                    enemyGroup.lookAt(targetPos);
+
+                    // Move towards player if too far
+                    if(dist > 150) {
+                        enemyGroup.translateZ(enemyStats.speed * 0.8);
+                        enemyGroup.rotation.z = Math.sin(Date.now() * 0.01) * 0.05;
+                    } else {
+                        enemyGroup.rotation.z = 0;
+                    }
+
+                    // Fire if close enough
+                    if(dist < 300 && enemyFireTimer <= 0) {
+                        fireBeam(enemyGroup, enemyStats, false);
+                        enemyFireTimer = 40; // Slower fire rate than player
                     }
                 }
 
-                for (let i = projectiles.length - 1; i >= 0; i--) {
-                    let p = projectiles[i]; p.mesh.position.add(p.vel); p.life--;
-                    let hit = false;
-                    for(let j=0; j<buildings.length; j++) {
-                        let b = buildings[j];
-                        if (b.hp > 0 && Math.abs(b.mesh.position.x - p.mesh.position.x) < b.w/2 && Math.abs(b.mesh.position.z - p.mesh.position.z) < b.d/2 && p.mesh.position.y < b.h) {
-                            damageBuilding(b, p.power); hit = true; break;
-                        }
-                    }
-                    if (hit || p.life <= 0) { scene.remove(p.mesh); projectiles.splice(i, 1); }
-                }
-
+                // Particles
                 for (let i = particles.length - 1; i >= 0; i--) {
-                    let p = particles[i]; p.vy -= 0.3; // gravity
+                    let p = particles[i]; p.vy -= 0.5;
                     p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz;
-                    p.life -= 0.03;
+                    p.life -= 0.05;
                     if (p.life <= 0 || p.mesh.position.y < 0) { scene.remove(p.mesh); particles.splice(i, 1); }
                 }
             }
             renderer.render(scene, camera);
         }
 
-        // --- UI ROUTING ---
-        function hideAll() { document.querySelectorAll('.ui-layer, .hud, #crosshair').forEach(e => e.classList.add('hidden')); document.getElementById('crosshair').style.display = 'none'; }
-        function showMenu() { document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll(); document.getElementById("start-screen").classList.remove("hidden"); camera.position.set(0, 400, 800); camera.lookAt(0,0,0); }
+        // --- MENUS ---
+        function hideAll() { document.querySelectorAll('.ui-layer, .hud').forEach(e => e.classList.add('hidden')); }
+        
+        function showMenu() { 
+            document.exitPointerLock(); gameState = "MENU"; updateSave(); hideAll(); 
+            document.getElementById("start-screen").classList.remove("hidden"); 
+            camera.position.set(0, 200, 400); camera.lookAt(0,0,0); 
+        }
+        
         function showShop() {
             hideAll(); document.getElementById("shop-screen").classList.remove("hidden"); let html = "";
             for (let k in kaijuDex) {
                 let d = kaijuDex[k]; let isUn = unlockedKaijus.includes(k); let isEq = equippedKaiju === k;
-                let btn = isEq ? `<button class="buy-btn" disabled style="background:#39ff14;color:#000;">DNA ACTIVE</button>` : 
-                          isUn ? `<button class="buy-btn" onclick="equip('${k}')">SELECT MUTATION</button>` : 
-                          `<button class="buy-btn" ${totalCoins >= d.cost ? '' : 'disabled'} onclick="buy('${k}', ${d.cost})">INJECT ${d.cost} COINS</button>`;
-                html += `<div class="shop-item ${isEq ? 'equipped' : ''}"><div style="font-size:14px; color:#fff;">${k}</div><div style="font-size:10px; color:#F6D305;">${d.desc}</div><div style="font-size:8px; color:#aaa;">POW: ${d.power} | SPD: ${d.speed}</div>${btn}</div>`;
+                let btn = isEq ? `<button class="buy-btn" style="background:#39ff14;color:#000;" disabled>EQUIPPED</button>` : 
+                          isUn ? `<button class="buy-btn" onclick="equip('${k}')">EQUIP</button>` : 
+                          `<button class="buy-btn" ${totalCoins >= d.cost ? '' : 'disabled'} onclick="buy('${k}', ${d.cost})">${d.cost} COINS</button>`;
+                html += `<div class="shop-item ${isEq ? 'equipped' : ''}">
+                            <h3 style="margin:0 0 10px 0; font-size:24px;">${k}</h3>
+                            <div style="font-size:18px; color:#aaa;">HP: ${d.hp} | POW: ${d.power}</div>
+                            ${btn}
+                         </div>`;
             }
             document.getElementById("shop-content").innerHTML = html;
         }
@@ -484,11 +399,28 @@
         function startGame() {
             document.body.requestPointerLock();
             hideAll(); document.getElementById("game-hud").classList.remove("hidden");
-            document.getElementById("crosshair").style.display = "block";
-            gameState = "PLAYING"; runCoins = 0; score = 0; camShake = 0; fireCooldownRight = 0;
-            document.getElementById("scoreUI").innerText = "0"; document.getElementById("coinUI").innerText = "0";
-            playerGroup.position.set(0, 0, 0); playerGroup.rotation.set(0, 0, 0);
-            buildKaijuModel(); generateCity();
+            
+            gameState = "PLAYING"; 
+            generateArena();
+
+            // Setup Player
+            playerStats = kaijuDex[equippedKaiju];
+            playerHp = playerStats.hp;
+            while(playerGroup.children.length > 1){ playerGroup.remove(playerGroup.children[1]); } // Keep cameraPivot
+            playerGroup.add(createKaijuMesh(playerStats, false));
+            playerGroup.position.set(0, 0, 300);
+            playerGroup.rotation.set(0, 0, 0);
+
+            // Setup Enemy Bot
+            enemyActive = true;
+            enemyStats = kaijuDex["Mecha-Gojira"]; // Always fight Mecha for now
+            enemyHp = enemyStats.hp;
+            while(enemyGroup.children.length > 0){ enemyGroup.remove(enemyGroup.children[0]); }
+            enemyGroup.add(createKaijuMesh(enemyStats, true));
+            enemyGroup.position.set(0, 0, -300);
+            
+            document.getElementById("enemy-health-bar").classList.remove("hidden");
+            updateHealthUI();
         }
 
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
